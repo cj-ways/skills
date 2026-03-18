@@ -2,6 +2,7 @@ import { join } from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { homedir } from "os";
+import { readdirSync, existsSync, statSync } from "fs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = join(__dirname, "..", "..");
@@ -38,25 +39,25 @@ export function getTargetDirs(agent, scope) {
         ],
       };
     default:
-      return {
-        skills: join(base, ".claude", "skills"),
-        agents: join(base, ".claude", "agents"),
-      };
+      throw new Error(`Unknown agent: ${agent}. Use: claude, codex, or multi`);
   }
 }
 
 export function getAvailableSkills() {
-  return [
-    "agent-audit",
-    "feature-audit",
-    "new-project-idea",
-    "find-unused",
-    "persist-knowledge",
-    "create-pr",
-    "deploy-prep",
-  ];
+  const skillsDir = join(PACKAGE_ROOT, "skills");
+  if (!existsSync(skillsDir)) return [];
+  return readdirSync(skillsDir).filter((name) => {
+    const dir = join(skillsDir, name);
+    return (
+      statSync(dir).isDirectory() && existsSync(join(dir, "SKILL.md"))
+    );
+  });
 }
 
 export function getAvailableAgents() {
-  return ["code-reviewer"];
+  const agentsDir = join(PACKAGE_ROOT, "agents");
+  if (!existsSync(agentsDir)) return [];
+  return readdirSync(agentsDir)
+    .filter((name) => name.endsWith(".md") && statSync(join(agentsDir, name)).isFile())
+    .map((name) => name.replace(/\.md$/, ""));
 }

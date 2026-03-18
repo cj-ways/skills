@@ -1,7 +1,7 @@
 import chalk from "chalk";
 import { getTargetDirs, getAvailableSkills, getAvailableAgents } from "../utils/paths.js";
 import { copySkills, copyAgents, mirrorSkills } from "../utils/copy.js";
-import { detectExistingAgents, isInsideProject } from "../utils/detect.js";
+import { isInsideProject } from "../utils/detect.js";
 import { existsSync } from "fs";
 import { join } from "path";
 
@@ -26,8 +26,11 @@ export async function runAdd(skills, opts) {
 
   let toInstall = skills || [];
 
-  if (opts.all || toInstall.length === 0) {
+  if (opts.all) {
     toInstall = allSkills;
+  } else if (toInstall.length === 0) {
+    console.log(chalk.yellow("Usage: arcana add <skill-name> [skill-name...] or arcana add --all"));
+    process.exit(1);
   }
 
   // Separate skills from agents
@@ -60,24 +63,15 @@ export async function runAdd(skills, opts) {
     }
   }
 
-  // Install agents
-  if (agentNames.length > 0 && dirs.agents) {
-    const results = copyAgents(agentNames, dirs.agents);
+  // Install agents (either explicitly named or all when --all)
+  const agentsToInstall = opts.all ? allAgents : agentNames;
+  if (agentsToInstall.length > 0 && dirs.agents) {
+    const results = copyAgents(agentsToInstall, dirs.agents);
     for (const r of results) {
       if (r.status === "installed") {
         console.log(chalk.green(`  ✓ ${r.name} (agent)`));
       } else {
         console.log(chalk.red(`  ✗ ${r.name} — ${r.status}`));
-      }
-    }
-  }
-
-  // Install all agents too when --all
-  if (opts.all && dirs.agents) {
-    const results = copyAgents(allAgents, dirs.agents);
-    for (const r of results) {
-      if (r.status === "installed") {
-        console.log(chalk.green(`  ✓ ${r.name} (agent)`));
       }
     }
   }

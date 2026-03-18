@@ -1,5 +1,8 @@
 # Arcana
 
+[![npm version](https://img.shields.io/npm/v/@cj-ways/arcana)](https://www.npmjs.com/package/@cj-ways/arcana)
+[![license](https://img.shields.io/npm/l/@cj-ways/arcana)](https://github.com/cj-ways/arcana/blob/main/LICENSE)
+
 Universal agent skills CLI. Install, manage, and sync battle-tested skills across **Claude Code, Codex CLI, Cursor**, and any agent that reads SKILL.md.
 
 7 skills + 1 agent. Stack-agnostic. Multi-agent ready.
@@ -28,6 +31,8 @@ arcana list                     # Show installed vs available
 arcana sync                     # Multi-agent: sync canonical to mirrors
 arcana update                   # Update installed skills to latest
 arcana use <skill>              # Print skill to stdout (no install)
+arcana doctor                   # Check installation health
+arcana info <skill>             # Show skill metadata
 ```
 
 ## Init Flow

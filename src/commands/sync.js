@@ -1,6 +1,6 @@
 import chalk from "chalk";
-import { existsSync, readFileSync, writeFileSync, appendFileSync } from "fs";
-import { join } from "path";
+import { existsSync, readFileSync, writeFileSync, appendFileSync, readdirSync } from "fs";
+import { join, relative } from "path";
 import fsExtra from "fs-extra";
 const { copySync, ensureDirSync } = fsExtra;
 
@@ -14,7 +14,7 @@ export async function runSync() {
         "No .agents/skills/ directory found. Run `arcana init` with multi-agent mode first."
       )
     );
-    return;
+    process.exit(1);
   }
 
   console.log(chalk.bold("\n✦ Arcana Sync\n"));
@@ -27,8 +27,8 @@ export async function runSync() {
   for (const target of targets) {
     ensureDirSync(target);
     copySync(canonical, target, { overwrite: true });
-    const relative = target.replace(cwd + "/", "");
-    console.log(chalk.green(`  ✓ ${relative} ← .agents/skills/`));
+    const rel = relative(cwd, target);
+    console.log(chalk.green(`  ✓ ${rel} ← .agents/skills/`));
   }
 
   console.log(chalk.bold("\n✦ Sync complete.\n"));
@@ -36,6 +36,17 @@ export async function runSync() {
 
 export function appendAgentsMdBlock(cwd) {
   const agentsPath = join(cwd, "AGENTS.md");
+  const skillsDir = join(cwd, ".agents", "skills");
+
+  // Discover installed skill names
+  let skillList = "";
+  if (existsSync(skillsDir)) {
+    const names = readdirSync(skillsDir).filter((name) => {
+      return existsSync(join(skillsDir, name, "SKILL.md"));
+    });
+    skillList = names.map((name) => `- ${name}`).join("\n");
+  }
+
   const block = `
 ## Agent Skills (Arcana)
 
@@ -44,6 +55,7 @@ Skills are located in \`.agents/skills/\`. Each skill folder contains a \`SKILL.
 **Skill discovery:** Enumerate all \`.agents/skills/*/SKILL.md\` files. Parse YAML front-matter to get name and description. Load full content only when the skill is invoked.
 
 Available skills:
+${skillList}
 `;
 
   if (existsSync(agentsPath)) {

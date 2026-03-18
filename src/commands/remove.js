@@ -2,6 +2,7 @@ import chalk from "chalk";
 import fsExtra from "fs-extra";
 const { removeSync, existsSync } = fsExtra;
 import { join } from "path";
+import { homedir } from "os";
 import { getAvailableSkills, getAvailableAgents } from "../utils/paths.js";
 
 export async function runRemove(skills) {
@@ -14,13 +15,21 @@ export async function runRemove(skills) {
   const allAgents = getAvailableAgents();
   const cwd = process.cwd();
 
-  // Search in all possible locations
+  // Search in all possible locations (project + user level)
   const searchDirs = [
     join(cwd, ".claude", "skills"),
     join(cwd, ".agents", "skills"),
     join(cwd, ".cursor", "skills"),
+    join(homedir(), ".claude", "skills"),
+    join(homedir(), ".agents", "skills"),
+    join(homedir(), ".cursor", "skills"),
   ];
-  const agentDirs = [join(cwd, ".claude", "agents")];
+  const agentDirs = [
+    join(cwd, ".claude", "agents"),
+    join(homedir(), ".claude", "agents"),
+  ];
+
+  let anyRemoved = false;
 
   for (const name of skills) {
     let removed = false;
@@ -52,5 +61,11 @@ export async function runRemove(skills) {
     if (!removed) {
       console.log(chalk.yellow(`  - ${name} not found in any location`));
     }
+
+    if (removed) anyRemoved = true;
+  }
+
+  if (!anyRemoved) {
+    process.exit(1);
   }
 }

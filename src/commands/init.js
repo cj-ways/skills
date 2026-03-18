@@ -1,5 +1,7 @@
 import inquirer from "inquirer";
 import chalk from "chalk";
+import { existsSync, readdirSync } from "fs";
+import { join } from "path";
 import { isInsideProject, suggestAgent } from "../utils/detect.js";
 import {
   getTargetDirs,
@@ -9,8 +11,41 @@ import {
 import { copySkills, copyAgents, mirrorSkills } from "../utils/copy.js";
 import { appendAgentsMdBlock } from "./sync.js";
 
+function hasArcanaSkills() {
+  const cwd = process.cwd();
+  const dirs = [
+    join(cwd, ".claude", "skills"),
+    join(cwd, ".agents", "skills"),
+  ];
+  for (const dir of dirs) {
+    if (existsSync(dir)) {
+      const entries = readdirSync(dir);
+      if (entries.some((e) => existsSync(join(dir, e, "SKILL.md")))) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 export async function runInit() {
   console.log(chalk.bold("\n✦ Arcana — Agent Skills Setup\n"));
+
+  // Detect existing installation
+  if (hasArcanaSkills()) {
+    const { overwrite } = await inquirer.prompt([
+      {
+        type: "confirm",
+        name: "overwrite",
+        message: "Arcana skills already detected. Overwrite?",
+        default: false,
+      },
+    ]);
+    if (!overwrite) {
+      console.log(chalk.dim("Exiting without changes."));
+      return;
+    }
+  }
 
   const inProject = isInsideProject();
   const suggested = suggestAgent();

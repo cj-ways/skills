@@ -1,6 +1,5 @@
 import { existsSync } from "fs";
 import { join } from "path";
-import { homedir } from "os";
 
 export function isInsideProject() {
   return existsSync(join(process.cwd(), ".git"));
@@ -24,6 +23,3 @@ export function suggestAgent() {
   return "claude";
 }
 
-export function getHomeDir() {
-  return homedir();
-}
