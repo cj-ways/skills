@@ -1,0 +1,15 @@
+{
+  "version": "1",
+  "name": "cj-ways Skills",
+  "plugins": [
+    {
+      "name": "cj-skills",
+      "version": "1.0.0",
+      "description": "Battle-tested Claude Code skills: agent audit, feature audit, code review, PR creation, dead code detection, knowledge persistence, deploy prep, project scaffolding.",
+      "source": {
+        "type": "github",
+        "repo": "cj-ways/cj-skills"
+      }
+    }
+  ]
+}
