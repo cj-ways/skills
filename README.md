@@ -1,4 +1,4 @@
-# cj-skills
+# Arcana
 
 Battle-tested Claude Code plugin with reusable skills and agents that work on **any project**.
 
@@ -8,25 +8,25 @@ Battle-tested Claude Code plugin with reusable skills and agents that work on **
 
 ```bash
 # Add the marketplace
-/plugin marketplace add cj-ways/cj-skills
+/plugin marketplace add cj-ways/skills
 
 # Install (choose your scope)
-/plugin install cj-skills@cj-ways-cj-skills --scope project   # shared with team (default)
-/plugin install cj-skills@cj-ways-cj-skills --scope user      # personal, all projects
-/plugin install cj-skills@cj-ways-cj-skills --scope local     # personal, this project only
+/plugin install arcana@cj-ways-skills --scope project   # shared with team (default)
+/plugin install arcana@cj-ways-skills --scope user      # personal, all projects
+/plugin install arcana@cj-ways-skills --scope local     # personal, this project only
 ```
 
 ## Skills
 
 | Skill | Invoke | Description |
 |-------|--------|-------------|
-| **agent-audit** | `/cj-skills:agent-audit` | Audit Claude Code config (skills, hooks, permissions, memory) against latest best practices |
-| **feature-audit** | `/cj-skills:feature-audit auth` | Interactive business audit — gaps, competitor analysis, improvements, roadmap |
-| **new-project-idea** | `/cj-skills:new-project-idea "todo app"` | Analyze idea critically, scaffold project with CLAUDE.md, PLAN.md, OpenSpec |
-| **find-unused** | `/cj-skills:find-unused` | Find dead code: unused exports, orphaned files, dead dependencies (TS, Go, Python, Rust) |
-| **persist-knowledge** | `/cj-skills:persist-knowledge` | Auto-save discovered patterns/conventions to CLAUDE.md, MEMORY.md, .claude/rules/ |
-| **create-pr** | `/cj-skills:create-pr` | Create PR/MR with auto-generated title, description, and affected areas (GitHub + GitLab) |
-| **deploy-prep** | `/cj-skills:deploy-prep` | Release analysis — env vars, migrations, schema changes, deployment checklists |
+| **agent-audit** | `/arcana:agent-audit` | Audit Claude Code config (skills, hooks, permissions, memory) against latest best practices |
+| **feature-audit** | `/arcana:feature-audit auth` | Interactive business audit — gaps, competitor analysis, improvements, roadmap |
+| **new-project-idea** | `/arcana:new-project-idea "todo app"` | Analyze idea critically, scaffold project with CLAUDE.md, PLAN.md, OpenSpec |
+| **find-unused** | `/arcana:find-unused` | Find dead code: unused exports, orphaned files, dead dependencies (TS, Go, Python, Rust) |
+| **persist-knowledge** | `/arcana:persist-knowledge` | Auto-save discovered patterns/conventions to CLAUDE.md, MEMORY.md, .claude/rules/ |
+| **create-pr** | `/arcana:create-pr` | Create PR/MR with auto-generated title, description, and affected areas (GitHub + GitLab) |
+| **deploy-prep** | `/arcana:deploy-prep` | Release analysis — env vars, migrations, schema changes, deployment checklists |
 
 ## Agent
 
@@ -58,7 +58,7 @@ mkdir -p ~/.claude/skills/dead-code  # or .claude/skills/ for project-level
 name: dead-code
 description: Alias for find-unused. Finds dead code in any project.
 ---
-Run /cj-skills:find-unused with these arguments: $ARGUMENTS
+Run /arcana:find-unused with these arguments: $ARGUMENTS
 ```
 
 ### Common alias examples

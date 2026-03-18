@@ -1,16 +1,17 @@
 {
-  "name": "cj-skills",
+  "name": "arcana",
   "version": "1.0.0",
   "description": "Battle-tested Claude Code skills for auditing, code review, PR creation, dead code detection, knowledge persistence, deployment prep, and project scaffolding. Works on any project.",
   "author": {
     "name": "cj-ways",
     "url": "https://github.com/cj-ways"
   },
-  "homepage": "https://github.com/cj-ways/cj-skills",
-  "repository": "https://github.com/cj-ways/cj-skills",
+  "homepage": "https://github.com/cj-ways/skills",
+  "repository": "https://github.com/cj-ways/skills",
   "license": "MIT",
   "keywords": [
     "skills",
+    "arcana",
     "audit",
     "code-review",
     "dead-code",
