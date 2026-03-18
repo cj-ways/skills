@@ -1,0 +1,42 @@
+{
+  "name": "@cj-ways/arcana",
+  "version": "1.0.0",
+  "description": "Universal agent skills CLI — install, manage, and sync battle-tested skills across Claude Code, Codex CLI, Cursor, and more.",
+  "bin": {
+    "arcana": "./bin/arcana.js"
+  },
+  "type": "module",
+  "keywords": [
+    "arcana",
+    "agent-skills",
+    "claude-code",
+    "codex",
+    "cursor",
+    "skills",
+    "multi-agent",
+    "cli"
+  ],
+  "author": "cj-ways",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cj-ways/skills.git"
+  },
+  "homepage": "https://github.com/cj-ways/skills#readme",
+  "dependencies": {
+    "commander": "^13.0.0",
+    "inquirer": "^12.0.0",
+    "chalk": "^5.4.0",
+    "fs-extra": "^11.3.0"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "skills/",
+    "agents/",
+    "templates/",
+    ".claude-plugin/",
+    "README.md",
+    "LICENSE"
+  ]
+}
