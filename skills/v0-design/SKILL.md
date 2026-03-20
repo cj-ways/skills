@@ -3,7 +3,7 @@ name: v0-design
 description: 'Generates optimized v0.dev prompts for UI design — full pages, single components, design systems, or redesigns. Analyzes the project, adapts questions to context, researches user-specified design references, and outputs ready-to-copy prompts following Vercel''s three-part framework. Manual via /v0-design.'
 argument-hint: "<app-description, feature, component, or design-system>"
 disable-model-invocation: true
-allowed-tools: ["Read", "Glob", "Grep", "Agent", "WebSearch", "WebFetch", "Write", "AskUserQuestion"]
+allowed-tools: Read, Glob, Grep, Agent, WebSearch, WebFetch, Write, AskUserQuestion
 effort: medium
 ---
 

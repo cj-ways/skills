@@ -3,6 +3,7 @@ name: idea-audit
 description: 'Analyzes a project idea critically, then scaffolds a full project with phased plan, CLAUDE.md, OpenSpec, and AI-optimized stack. Manual via /idea-audit.'
 argument-hint: "<project-idea>"
 disable-model-invocation: true
+allowed-tools: Read, Grep, Glob, Agent, WebSearch, WebFetch, Write, AskUserQuestion
 effort: high
 ---
 

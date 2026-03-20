@@ -3,7 +3,7 @@ name: deep-review
 description: 'Multi-perspective deep code review using 3 specialized parallel reviewers (security, correctness, architecture). Consolidates into unified report with confidence gating. Use for pre-release audits or security-critical changes. Manual via /deep-review.'
 argument-hint: "[files or branch]"
 disable-model-invocation: true
-allowed-tools: ["Bash", "Read", "Grep", "Glob", "Agent"]
+allowed-tools: Bash, Read, Grep, Glob, Agent
 effort: high
 isolation: worktree
 memory: project

@@ -3,7 +3,7 @@ name: quick-review
 description: 'Fast single-pass code review with strong false-positive suppression. Reviews git diff for runtime errors, data corruption, security breaches, operational incidents. Use for PR reviews and quick change validation. Manual via /quick-review.'
 argument-hint: "[files or branch]"
 disable-model-invocation: true
-allowed-tools: ["Bash", "Read", "Grep", "Glob"]
+allowed-tools: Bash, Read, Grep, Glob
 effort: medium
 isolation: worktree
 memory: project

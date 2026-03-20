@@ -3,6 +3,7 @@ name: feature-audit
 description: 'Interactive business audit for any feature — 13 universal perspectives + dynamically discovered feature-specific angles. Competitor analysis, gaps, improvements, roadmap. Works on any project. Manual via /feature-audit.'
 argument-hint: "<feature-name>"
 disable-model-invocation: true
+allowed-tools: Read, Grep, Glob, Agent, WebSearch, WebFetch, Write, AskUserQuestion
 effort: high
 ---
 
