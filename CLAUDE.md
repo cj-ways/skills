@@ -2,9 +2,9 @@
 
 ## What This Is
 
-Arcana (`@cj-ways/arcana`) is a universal agent skills CLI. It installs, manages, and syncs battle-tested skills across Claude Code, Codex CLI, Cursor, Gemini, and any agent that reads SKILL.md. Published on npm under `@cj-ways/arcana`. GitHub: `cj-ways/arcana`. MIT licensed.
+Arcana (`@cj-ways/arcana`) is a curated agent skills CLI for Claude Code and Codex CLI. It ships 13 hand-authored skills, 2 agents, and 3 quality rules — all backed by SkillsBench data. Published on npm under `@cj-ways/arcana`. GitHub: `cj-ways/arcana`. MIT licensed.
 
-**Current version:** 1.5.0 (13 skills + 2 agents + 3 quality rules)
+**Current version:** 1.6.0 (13 skills + 2 agents + 3 quality rules)
 
 ## Your Role
 
@@ -22,47 +22,61 @@ You are the project owner, solution architect, lead developer, and release manag
 - `skills/*/SKILL.md` — 13 skills (the core value)
 - `agents/*.md` — 2 agents (code-reviewer, review-team)
 - `rules/*.md` — 3 quality rules (methodology, quality, research)
+- `migrations.json` — skill rename/removal migrations across versions
 - `SKILL-AUTHORING-REFERENCE.md` — evidence-based authoring guide (22 sources, SkillsBench data)
 
 ### Skills Inventory
+
+**Development Workflow:**
 | Skill | Purpose | Key Feature |
 |-------|---------|-------------|
-| agent-audit | Audit Claude Code config | Argument routing, research phase |
+| idea-audit | Validate project idea + scaffold | AI-optimized stack, Phase Execution Protocol |
 | feature-audit | Interactive business audit | 13 perspectives + dynamic discovery, ONE QUESTION AT A TIME |
-| new-project-idea | Analyze idea + scaffold | AI-optimized stack, Phase Execution Protocol |
-| find-unused | Dead code detection | Confidence tiers (SAFE/LIKELY/VERIFY) |
-| persist-knowledge | Save patterns to docs | Auto-invoke + manual modes |
+| v0-design | v0.dev prompt generation | 5 modes (Greenfield, Redesign, Component, Multi-page, Design System) |
+| generate-tests | Auto-generate tests | Framework detection, complexity assessment |
+| quick-review | Fast code review | False-positive suppression |
+| deep-review | Multi-pass code review | 3 parallel agents (security, correctness, architecture) |
 | create-pr | Create PR/MR | GitHub + GitLab auto-detection |
 | deploy-prep | Release checklists | Risk prioritization matrix |
-| deep-review | Multi-pass code review | 3 parallel agents (security, correctness, architecture) |
-| quick-review | Fast code review | False-positive suppression |
-| v0-design | v0.dev prompt generation | 5 modes (Greenfield, Redesign, Component, Multi-page, Design System) |
-| import-skill | Import external skills | Quality adaptation pipeline |
-| generate-tests | Auto-generate tests | Framework detection, complexity assessment |
+
+**Toolkit:**
+| Skill | Purpose | Key Feature |
+|-------|---------|-------------|
 | security-check | Security scan | Secrets, vulns, deps, CVE research |
+| find-unused | Dead code detection | Confidence tiers (SAFE/LIKELY/VERIFY) |
+| persist-knowledge | Save patterns to docs | Auto-invoke + manual modes |
+| agent-audit | Audit Claude Code config | Argument routing, research phase |
+| import-skill | Import external skills | Quality adaptation pipeline (draft — needs development) |
 
 ### Agents
 - `code-reviewer` — Single-pass reviewer with false-positive suppression (model: sonnet, tools: read-only)
 - `review-team` — Spawns 3 parallel specialist reviewers (model: sonnet, effort: high)
 
+### Supported Agents
+- **Claude Code** — `.claude/skills/`, `.claude/agents/`, `.claude/rules/`
+- **Codex CLI** — `.agents/skills/`, AGENTS.md discovery block
+- **Multi-agent** — canonical in `.agents/skills/`, mirrors to `.claude/skills/`
+
+Cursor and Gemini support was removed in v1.6.0 to focus on quality over coverage.
+
 ## Publishing & Infrastructure
 
 ### npm Publishing
-- Token stored in `.npmrc` (gitignored) — `npm publish --access public` works without OTP
+- Token stored in `.npmrc` (gitignored) — `npm publish --access public --provenance` works without OTP
 - Token also in `.claude/settings.local.json` env as `NPM_TOKEN`
-- Always bump version in THREE places: `package.json`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`
+- Use `node scripts/release.js <version>` to bump version across all 3 files
 - Always update `CHANGELOG.md` with the new version entry
 - CI runs on push: GitHub Actions, Node 18/20/22, smoke tests
 
 ### Release Checklist
 1. Make changes
-2. Bump version in `package.json`, `plugin.json`, `marketplace.json`
+2. `node scripts/release.js <version>` (bumps package.json, plugin.json, marketplace.json)
 3. Update `CHANGELOG.md`
 4. `git add` specific files (never `git add -A`)
 5. Commit with descriptive message
 6. `git push origin main`
 7. Wait for CI to pass: `gh run list --limit 1`
-8. `npm publish --access public`
+8. `npm publish --access public --provenance`
 9. Verify: `npm view @cj-ways/arcana version`
 
 ### File Structure
@@ -70,11 +84,14 @@ You are the project owner, solution architect, lead developer, and release manag
 bin/arcana.js              — CLI entry point
 src/commands/*.js          — 9 command implementations
 src/utils/paths.js         — Path resolution, skill/agent discovery
-src/utils/detect.js        — Agent auto-detection (Claude, Codex, Cursor, Gemini, Copilot)
+src/utils/detect.js        — Agent auto-detection (Claude, Codex)
 src/utils/copy.js          — File copying, conflict detection, markers
 skills/*/SKILL.md          — 13 skill definitions
 agents/*.md                — 2 agent definitions
 rules/*.md                 — 3 quality rules
+migrations.json            — Skill rename/removal migrations
+scripts/release.js         — Version bump automation
+docs/features/arcana-cli/  — Feature documentation from audit
 .claude-plugin/            — Plugin marketplace metadata
 SKILL-AUTHORING-REFERENCE.md — Authoring guide
 ```
@@ -88,6 +105,7 @@ SKILL-AUTHORING-REFERENCE.md — Authoring guide
 - **Gotchas go near the top** — instruction priority: early rules > late rules (confirmed by SkillsBench)
 - **Per-step constraint design**: Procedural steps encourage divergence, criteria steps force convergence
 - **Emphasis**: CAPS on max 2-3 rules. Explain WHY for everything else
+- **`allowed-tools`**: All skills must declare allowed-tools in frontmatter, comma-separated format
 - **Testing**: 20 eval queries (10 should-trigger, 10 should-not), run 3+ times each
 
 ### Key Findings (SkillsBench, 7,308 trajectories)
@@ -97,16 +115,11 @@ SKILL-AUTHORING-REFERENCE.md — Authoring guide
 - Detailed docs: +18.8pp (best)
 - Self-generated skills: -1.3pp (no benefit)
 
-## Known Issues (from deep code review)
+## Known Issues
 
 ### CLI Code Quality
-- `copy.js`: Frontmatter parsing splits on `---` which breaks if content contains `---` in code blocks
 - `copy.js`: Legacy detection via name matching can false-positive on user skills with matching names
-- `init.js`: `conflictResolved` undefined when `conflicts.length === 0` → potential NaN in summary
-- `list.js`, `remove.js`, `update.js`, `doctor.js`: Incomplete location coverage — missing `~/.cursor/skills`, `~/.gemini/skills` at user level
-- `init.js`: Rules silently overwrite without conflict detection (unlike skills)
 - No version tracking in skills — `update` blindly re-copies without knowing if changed
-- `update` doesn't trigger `sync` — multi-agent mirrors get out of date
 
 ### Not Issues (intentional)
 - Platform: Unix paths only (macOS/Linux target, not Windows)
@@ -115,13 +128,18 @@ SKILL-AUTHORING-REFERENCE.md — Authoring guide
 
 ## Design Decisions
 
+### v1.6.0 Changes (2026-03-20)
+- **Dropped Cursor/Gemini** — focus on Claude Code + Codex CLI
+- **Renamed `new-project-idea` → `idea-audit`** — consistent `*-audit` naming family
+- **Migration system** — `migrations.json` handles skill lifecycle changes
+- **Release script** — `scripts/release.js` prevents version drift
+- **README rewritten** — why-first, workflow split, quantified claims
+- **Feature documentation** — `docs/features/arcana-cli/` from comprehensive audit
+
 ### v1.5.0 Changes (2026-03-20)
-- **Gotchas relocated to near-top in 10 skills** — per Arcana's own authoring reference + Anthropic priority hierarchy + per-step constraint design research
-- **v0-design: Design System mode added** — 5th mode with full end-to-end support, triggered by confirmed 3x agent failure
-- **v0-design: Role principle added** — "Prompt Architect" (structural decisions yours, aesthetic decisions v0's) — prevents agents from independently researching design systems
-- **v0-design: v0 ecosystem integration** — Design System registries, saved Instructions, Design Mode
-- **v0-design: description fixed** — "researches design references" → "researches user-specified design references" (root cause of agent overreach)
-- **3 skills kept without Gotchas** — agent-audit, create-pr, import-skill have "Rules" sections that contain operational directives, not failure modes. Renaming would be inaccurate.
+- **Gotchas relocated to near-top in 10 skills**
+- **v0-design: Design System mode added** — 5th mode
+- **v0-design: Role principle added** — "Prompt Architect"
 
 ## How to Work on This Project
 
@@ -135,14 +153,9 @@ SKILL-AUTHORING-REFERENCE.md — Authoring guide
 - Gotchas section goes near the top (after Arguments)
 - Use "## Gotchas" naming (standardized)
 - Keep skills under 500 lines
+- All skills must have `allowed-tools` in frontmatter (comma-separated format)
 - Don't add features the user didn't ask for
 - Test description changes against trigger/non-trigger scenarios
-
-### When receiving feedback about skills
-- Don't blindly agree — verify claims against the actual skill content
-- Check if the reported behavior is actually caused by the skill or by something else (global rules, agent behavior)
-- The skill's own SKILL-AUTHORING-REFERENCE.md is the quality standard — check against it
-- Research current best practices before recommending fixes
 
 ### Commit style
 ```

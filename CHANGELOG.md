@@ -1,5 +1,28 @@
 # Changelog
 
+## v1.6.0 (2026-03-20)
+
+### Breaking Changes
+- **Dropped Cursor and Gemini support** — Arcana now targets Claude Code and Codex CLI only
+
+### Added
+- **Migration system (`migrations.json`)** — handles skill renames and removals across versions
+- **Release script (`scripts/release.js`)** — bumps version across 3 files in one command
+- **`allowed-tools` on all 13 skills** — standardized comma-separated format
+- **Feature documentation** — `docs/features/arcana-cli/`
+- **npm provenance** — added `--provenance` to publish workflow
+
+### Changed
+- **Renamed `new-project-idea` to `idea-audit`** — consistent `*-audit` naming family
+- **README rewritten** — why-first positioning, workflow + toolkit skill split
+- **`update` now triggers `sync`** — multi-agent mirrors stay in sync automatically
+- **`update` now covers `~/.agents/skills/`** — previously missing user-level path
+
+### Fixed
+- **`copy.js` frontmatter parsing** — regex instead of `split("---")`
+- **Rules conflict detection** — no longer silently overwrites
+- **README accuracy** — correct agent count, no Cursor/Gemini references
+
 ## v1.5.0 (2026-03-20)
 
 ### Added
