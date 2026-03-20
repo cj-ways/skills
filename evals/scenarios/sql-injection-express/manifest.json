@@ -1,0 +1,69 @@
+{
+  "name": "sql-injection-express",
+  "skill": "security-check",
+  "description": "Express API with SQL injection, hardcoded secrets, and path traversal. Also includes safe code that should NOT be flagged.",
+  "expected": [
+    {
+      "id": "sql-inject-raw",
+      "description": "Raw SQL with string interpolation in users.js",
+      "file": "src/routes/users.js",
+      "line": 8,
+      "severity": "critical",
+      "mustFind": true
+    },
+    {
+      "id": "sql-inject-template",
+      "description": "Template literal in SQL query in users.js",
+      "file": "src/routes/users.js",
+      "line": 16,
+      "severity": "critical",
+      "mustFind": true
+    },
+    {
+      "id": "hardcoded-api-key",
+      "description": "Hardcoded API key in config/index.js",
+      "file": "src/config/index.js",
+      "line": 2,
+      "severity": "high",
+      "mustFind": true
+    },
+    {
+      "id": "hardcoded-db-password",
+      "description": "Hardcoded database password in config/index.js",
+      "file": "src/config/index.js",
+      "line": 6,
+      "severity": "high",
+      "mustFind": true
+    },
+    {
+      "id": "path-traversal",
+      "description": "User input used directly in file path in files.js",
+      "file": "src/routes/files.js",
+      "line": 7,
+      "severity": "critical",
+      "mustFind": true
+    },
+    {
+      "id": "xss-reflected",
+      "description": "User input rendered directly in HTML response in search.js",
+      "file": "src/routes/search.js",
+      "line": 5,
+      "severity": "high",
+      "mustFind": true
+    }
+  ],
+  "falsePositives": [
+    {
+      "id": "fp-parameterized",
+      "description": "Parameterized query in posts.js is safe",
+      "file": "src/routes/posts.js",
+      "mustNotFlag": true
+    },
+    {
+      "id": "fp-env-var",
+      "description": "API key from environment variable in config/safe.js",
+      "file": "src/config/safe.js",
+      "mustNotFlag": true
+    }
+  ]
+}

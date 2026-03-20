@@ -1,0 +1,45 @@
+{
+  "name": "untested-api",
+  "skill": "generate-tests",
+  "description": "Express API with one tested file and one untested file. Skill should generate tests for the untested file matching the existing test style.",
+  "expected": [
+    {
+      "id": "test-file-created",
+      "description": "A test file for orders.js should be created",
+      "type": "file-created",
+      "mustFind": true
+    },
+    {
+      "id": "test-happy-path",
+      "description": "Test for successful order creation (201 response)",
+      "type": "test-case",
+      "mustFind": true
+    },
+    {
+      "id": "test-validation-error",
+      "description": "Test for missing required fields (400 response)",
+      "type": "test-case",
+      "mustFind": true
+    },
+    {
+      "id": "test-not-found",
+      "description": "Test for order not found (404 response)",
+      "type": "test-case",
+      "mustFind": true
+    },
+    {
+      "id": "matches-existing-style",
+      "description": "Generated tests use vitest (matching existing test file), not jest or mocha",
+      "type": "style-match",
+      "mustFind": true
+    }
+  ],
+  "falsePositives": [
+    {
+      "id": "fp-no-rewrite-existing",
+      "description": "Should not rewrite or modify the existing users.test.js",
+      "file": "tests/users.test.js",
+      "mustNotFlag": true
+    }
+  ]
+}
