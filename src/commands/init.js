@@ -35,11 +35,18 @@ function copyRules(targetDir) {
   const rulesDir = getPackageRulesDir();
   if (!existsSync(rulesDir)) return [];
   const results = [];
-  const files = readdirSync(rulesDir).filter((f) => f.endsWith(".md"));
+  const arcanaRuleNames = readdirSync(rulesDir).filter((f) => f.endsWith(".md"));
   ensureDirSync(targetDir);
-  for (const file of files) {
+  for (const file of arcanaRuleNames) {
     const src = join(rulesDir, file);
     const dest = join(targetDir, file);
+
+    // Conflict detection: skip if file exists and is NOT an Arcana rule
+    if (existsSync(dest) && !arcanaRuleNames.includes(file)) {
+      results.push({ name: file, status: "conflict" });
+      continue;
+    }
+
     fsCopySync(src, dest, { overwrite: true });
     results.push({ name: file, status: "installed" });
   }

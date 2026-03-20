@@ -42,10 +42,11 @@ function isArcanaManaged(filePath) {
 function addMarker(content) {
   if (content.includes(ARCANA_MARKER)) return content;
   // Insert marker after the closing --- of frontmatter
-  const parts = content.split("---");
-  if (parts.length >= 3) {
-    // frontmatter is between first and second ---
-    return parts[0] + "---" + parts[1] + "---\n" + ARCANA_MARKER + "\n" + parts.slice(2).join("---");
+  // Use regex to match only the frontmatter block (first two --- delimiters)
+  const fmMatch = content.match(/^(---\n[\s\S]*?\n---)\n?/);
+  if (fmMatch) {
+    const afterFm = content.slice(fmMatch[0].length);
+    return fmMatch[1] + "\n" + ARCANA_MARKER + "\n" + afterFm;
   }
   return ARCANA_MARKER + "\n" + content;
 }
