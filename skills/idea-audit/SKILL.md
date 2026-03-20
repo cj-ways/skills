@@ -1,6 +1,6 @@
 ---
-name: new-project-idea
-description: 'Analyzes a project idea critically, then scaffolds a full project with phased plan, CLAUDE.md, OpenSpec, and AI-optimized stack. Manual via /new-project-idea.'
+name: idea-audit
+description: 'Analyzes a project idea critically, then scaffolds a full project with phased plan, CLAUDE.md, OpenSpec, and AI-optimized stack. Manual via /idea-audit.'
 argument-hint: "<project-idea>"
 disable-model-invocation: true
 effort: high

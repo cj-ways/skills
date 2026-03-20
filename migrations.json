@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "migrations": [
+    {
+      "type": "rename",
+      "from": "new-project-idea",
+      "to": "idea-audit",
+      "since": "1.6.0"
+    }
+  ]
+}
