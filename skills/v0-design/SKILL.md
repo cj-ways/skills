@@ -1,7 +1,7 @@
 ---
 name: v0-design
-description: 'Generates optimized v0.dev prompts for UI design — full pages, single components, or redesigns. Analyzes the project, adapts questions to context, researches design references, and outputs ready-to-copy prompts following Vercel''s three-part framework. Manual via /v0-design.'
-argument-hint: "<app-description, feature, or component>"
+description: 'Generates optimized v0.dev prompts for UI design — full pages, single components, design systems, or redesigns. Analyzes the project, adapts questions to context, researches user-specified design references, and outputs ready-to-copy prompts following Vercel''s three-part framework. Manual via /v0-design.'
+argument-hint: "<app-description, feature, component, or design-system>"
 disable-model-invocation: true
 allowed-tools: ["Read", "Glob", "Grep", "Agent", "WebSearch", "WebFetch", "Write", "AskUserQuestion"]
 effort: medium
@@ -9,7 +9,17 @@ effort: medium
 
 # /v0-design — Generate v0.dev Design Prompts
 
-Generate optimized prompts for v0.dev that produce consistent, production-ready UI designs. Supports full apps, single pages, individual components, and redesigns of existing UIs.
+Generate optimized prompts for v0.dev that produce consistent, production-ready UI designs. Supports full apps, single pages, individual components, design systems, and redesigns of existing UIs.
+
+## Role: Prompt Architect
+
+Structure what v0 builds. Defer how it looks.
+
+- **Structural decisions** (page order, layout type, content sections, states, interactions): yours
+- **Aesthetic decisions** (colors, typography, spacing, shadows, design language): v0's
+- Design references: research ONLY when the user explicitly names one. Do not independently research design systems, competitor UIs, or visual references.
+
+The one exception: when the project clearly derives from a known product (e.g., `notion-clone` in package.json), mention it so v0 produces coherent output.
 
 ## Arguments
 
@@ -21,8 +31,22 @@ Examples:
 - `/v0-design "student portal with dashboard, schedule, exams, grades"`
 - `/v0-design "redesign our settings page"`
 - `/v0-design "data table component with sorting and filtering"`
+- `/v0-design "project-level design system — colors, typography, spacing"`
 
 If no argument is provided, ask what to design.
+
+## Gotchas
+
+1. **Forgetting the component library** — v0 invents its own components, inconsistent with your project. Always name shadcn/ui (or whatever the project uses) explicitly.
+2. **Vague responsive behavior** — v0 generates desktop-only or breaks on mobile. Specify breakpoints and layout changes.
+3. **Skipping empty states** — pages look great with data, blank/broken without it. Always describe empty, loading, and error states.
+4. **Writing "use dark colors" instead of "dark mode variant"** — v0 makes a dark-themed light mode, not an actual dark mode toggle.
+5. **Generating all pages in one prompt** — v0 combines everything into a single messy page. One page per prompt.
+6. **Forgetting non-Latin fonts** — Georgian/Chinese/Arabic text renders in fallback font. Specify font stack.
+7. **Over-constraining colors/spacing in page/component prompts** — let v0 choose within your structural framework. (In Design System mode, defining these IS the goal.)
+8. **Researching design systems or references independently** — only research when the user explicitly names a reference. v0 handles aesthetics.
+9. **Using vague language** — "make it look nice", "add some cards", "make it modern" produce poor results. Be specific about content, data, and interactions.
+10. **Including backend logic in prompts** — v0 generates UI only. No API calls, database queries, or server logic.
 
 ---
 
@@ -36,6 +60,7 @@ Determine the design mode from the argument and project state:
 | Argument mentions "redesign" or existing pages exist | **Redesign** | Read current pages/components to understand what's being replaced |
 | Argument describes a single component (table, form, card) | **Component** | Generate a single component prompt, skip context message and multi-page flow |
 | Argument describes multiple pages | **Multi-page** | Full flow: context message + per-page prompts |
+| Argument mentions "design system", "theme", "tokens", "colors + typography", "styling" | **Design System** | Generate design system prompts — palette, typography, spacing, component styling. Skip page-prompt flow. |
 
 **Greenfield default stack**: Next.js (App Router) + TypeScript + Tailwind CSS + shadcn/ui + lucide-react. Deviate only if the user specifies otherwise.
 
@@ -57,6 +82,8 @@ Determine the design mode from the argument and project state:
 
 **For redesigns**, also read the specific pages being redesigned. Summarize the current layout, data displayed, and interactions so the prompt can say "replace the current tab-based schedule with a 5-column grid."
 
+**For design systems**, focus on: `tokens.css` / `globals.css` (current CSS variables), `tailwind.config.ts` (current token scales), existing component files (current styling patterns), and any `registry.json` or shadcn theme configuration. Identify gaps: missing semantic tokens, inconsistent radius/shadow usage, no dark mode variables, incomplete component coverage.
+
 **For greenfield projects**, skip to Step 3.
 
 ---
@@ -70,13 +97,20 @@ Ask clarifying questions using **AskUserQuestion**. ONE question at a time. Let 
 - What pages/screens are needed?
 - Who uses this app? On what device primarily?
 - Any design references to match? (e.g., "like Linear", "like Notion")
-- Fresh theme or match existing project colors?
+- Should v0 design within your existing color palette, or choose its own?
 - Any specific interaction patterns needed? (wizards, drag-drop, real-time)
 - Mobile-first or desktop-first?
 - Any non-English text? What language(s)?
 
+**For Design System mode**, ask instead:
+- What's the primary goal — a complete new design system, or refining the existing one?
+- Are you setting up a v0 Design System registry for consistent generation, or do you want a visual design reference?
+- What components need styling? (buttons, cards, inputs, tables, badges, modals, etc.)
+
 **If the user mentions a design reference** (e.g., "like Linear"):
 Use **WebSearch** to research it. Search for `"[app name] UI design"` or `"[app name] dashboard screenshot"`. Extract specific visual traits: layout structure, color temperature, typography weight, spacing density, border radius, shadow style. Translate these into concrete v0 instructions instead of just writing "like Linear."
+
+**Do NOT research design references, competitor UIs, or design systems unless the user explicitly names one.**
 
 **2-4 questions max.** If the argument already contains enough detail, skip directly to generation.
 
@@ -109,9 +143,13 @@ Ready? I'll start with [first page — pick the most visually complex one].
 
 **For component mode**: Skip the context message. Generate a single component prompt directly.
 
+**For design system mode**: Skip the context message. Generate a design system prompt directly (see Step 5).
+
+**v0 ecosystem tip**: If the user has a v0 project, suggest saving the context message as a v0 Instruction (v0 Settings → Instructions). This persists across all chats and eliminates re-pasting.
+
 ---
 
-## Step 5: Generate Page/Component Prompts
+## Step 5: Generate Page/Component/Design System Prompts
 
 ### For each page:
 
@@ -164,6 +202,63 @@ Variants: [compact vs expanded, light vs dark]
 Design: [specific shadcn/ui base component], [Tailwind], dark mode.
 ```
 
+### For design systems:
+
+Single comprehensive prompt (800-1200 words):
+
+```
+Design a complete design system reference for "[App Name]" — [one-line description].
+
+The app uses [framework] + [component library] + [CSS framework].
+
+[If existing tokens: "Current theme uses these CSS variables: [list key variables with current values]. Refine and extend this system." If new: "Create a cohesive design system for [audience/domain]."]
+
+Generate a visual reference sheet showing:
+
+COLOR PALETTE:
+- Primary, secondary, accent, destructive colors with semantic tokens
+- Background and foreground scales (at least 3 levels each)
+- Border, ring, and muted variants
+- Format as CSS custom properties using shadcn/ui naming (--primary, --secondary, etc.)
+- Light AND dark mode values for every token
+
+TYPOGRAPHY:
+- Font family recommendations (with Google Fonts names)
+- Type scale: xs through 4xl with sizes, weights, and line-heights
+- Heading styles (h1-h4) and body text styles
+- [If non-Latin: "Include [language] font stack — e.g., Noto Sans Georgian"]
+
+SPACING & SHAPE:
+- Spacing scale (4px base, show common values)
+- Border radius scale (sm, md, lg, xl, full)
+- Shadow scale (sm, md, lg) for cards, dropdowns, modals
+- Border widths and styles
+
+COMPONENT STYLING:
+- Buttons: primary, secondary, outline, ghost, destructive — all states (hover, active, disabled, focus)
+- Cards: default, interactive (hover lift/border), nested
+- Inputs: default, focus, error, disabled
+- Badges: status variants (success, warning, error, info, neutral)
+- Tables: header, row, hover, striped variant
+- [Additional components from project: list specific ones]
+
+INTERACTION PATTERNS:
+- Hover transitions (duration, easing)
+- Focus ring style
+- Active/pressed states
+- Loading indicators (skeleton, spinner)
+
+Make every token copyable. Show visual swatches next to color values. Use shadcn/ui components for all examples.
+```
+
+**Alternative path — v0 Design System registry**: If the user wants consistent v0 generation across all chats (not just a visual reference), suggest setting up a v0 Design System registry instead:
+1. Fork the [registry-starter](https://github.com/vercel/registry-starter) template
+2. Customize `src/app/tokens.css` with the project's color tokens
+3. Update `src/app/layout.tsx` with the project's font
+4. Deploy and connect to v0 project settings
+
+This is more work but produces infrastructure, not just a reference sheet. Ask which path the user prefers.
+
 ### Page ordering strategy:
 
 Generate the most visually complex page first (usually dashboard or main content page). This establishes the richest design language. Simpler pages inherit the established style.
@@ -204,6 +299,13 @@ If the theme drifts between pages:
 → "Match the style of [first page] — same card radius, shadow depth, color palette"
 ```
 
+**For design systems**, provide iteration prompts like:
+- "Add hover/focus/active states to all interactive components"
+- "Make the color palette warmer/cooler — shift primary hue by 15 degrees"
+- "Add a compact density variant for data-heavy views"
+
+**v0 Design Mode tip**: For visual tweaks (colors, spacing, typography adjustments), suggest using v0's Design Mode instead of re-prompting — it's faster and doesn't cost credits.
+
 ---
 
 ## Step 7: Verify and Output
@@ -216,7 +318,7 @@ If the theme drifts between pages:
 - [ ] Actual text content in target language (spelled out, not "Georgian text")
 - [ ] Empty/loading/error states for data-dependent sections
 - [ ] Interaction descriptions (hover, click, expand, tooltip)
-- [ ] Between 800-1200 words (pages) or 400-600 words (components)
+- [ ] Between 800-1200 words (pages/design systems) or 400-600 words (components)
 - [ ] Component library + CSS framework specified
 - [ ] No conflicting instructions between prompts
 - [ ] Page ordering: most complex first
@@ -226,16 +328,16 @@ If the theme drifts between pages:
 
 Write to `docs/v0-prompts.md` (or the filename the user specifies).
 
-**Output structure**:
+**Output structure for pages/components**:
 ```markdown
 # v0.dev Design Prompts — [App Name]
 
 ## How to Use
-1. Go to v0.dev → start a NEW chat
-2. Paste the Context Message first
+1. Go to v0.dev → start a NEW chat (or open your v0 project)
+2. Paste the Context Message first (or save it as a v0 Instruction for reuse)
 3. Paste each page prompt one at a time, in order
 4. Use iteration prompts if results need adjustment
-5. Use Design Mode (free) for visual tweaks
+5. Use Design Mode (free) for visual tweaks — colors, spacing, typography
 6. Download zip after each page for backup
 
 ## Context Message
@@ -257,22 +359,28 @@ Write to `docs/v0-prompts.md` (or the filename the user specifies).
 [tailored follow-ups]
 ```
 
----
+**Output structure for design systems**:
+```markdown
+# v0.dev Design System Prompts — [App Name]
 
-## Gotchas
+## How to Use
+1. Go to v0.dev → start a NEW chat
+2. Paste the design system prompt below
+3. Use Design Mode to fine-tune colors, typography, spacing visually
+4. Copy the generated token values into your project's globals.css / tokens.css
+5. For persistent v0 integration, set up a Design System registry (see below)
 
-1. **Forgetting the component library** → v0 invents its own components, inconsistent with your project
-2. **Vague responsive behavior** → v0 generates desktop-only or breaks on mobile
-3. **Skipping empty states** → pages look great with data, blank/broken without it
-4. **Writing "use dark colors" instead of "dark mode variant"** → v0 makes a dark-themed light mode, not an actual dark mode toggle
-5. **Generating all pages in one prompt** → v0 combines everything into a single messy page
-6. **Forgetting non-Latin fonts** → Georgian/Chinese/Arabic text renders in fallback font, looks broken
+## Design System Prompt
+\`\`\`
+[design system prompt]
+\`\`\`
 
-## Anti-Patterns
+## Iteration Prompts
+[tailored follow-ups]
 
-- Generate one massive prompt with all pages combined
-- Use vague language: "make it look nice", "add some cards", "make it modern"
-- Include backend logic, API calls, or database queries in prompts — v0 generates UI only
-- Skip the context message for multi-page projects — styles will drift
-- Over-constrain colors/spacing — let v0 choose within your structural framework
-- Copy-paste the same prompt structure for every page — each page has unique needs
+## Next Steps: v0 Design System Registry (Optional)
+To make v0 use your design system automatically in all future chats:
+1. Fork vercel/registry-starter
+2. Replace tokens.css with your generated tokens
+3. Deploy and connect to your v0 project
+```

@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.5.0 (2026-03-20)
+
+### Added
+- **v0-design: Design System mode** — new 5th mode for generating design system prompts (color palettes, typography scales, spacing, component styling). Full end-to-end support across all 7 steps.
+- **v0-design: Role principle** — "Prompt Architect" behavioral boundary (structural decisions yours, aesthetic decisions v0's) prevents agents from overstepping into design research
+- **v0-design: v0 ecosystem integration** — references v0 Design System registries, saved Instructions, and Design Mode for iteration
+- **v0-design: Design system prompt template** — 800-1200 word comprehensive template covering colors, typography, spacing, shadows, component styling, and interaction patterns
+
+### Enhanced
+- **Gotchas relocated to near-top in 10 skills** — moved from bottom of file to after Arguments section per Arcana's own SKILL-AUTHORING-REFERENCE.md (instruction priority: early rules > late rules). Affected: deep-review, deploy-prep, feature-audit, find-unused, generate-tests, new-project-idea, persist-knowledge, quick-review, security-check, v0-design
+- **Gotchas naming standardized** — "Common Agent Gotchas" renamed to "Gotchas" across all skills for consistent terminology
+- **v0-design: Gotchas expanded** — merged Gotchas + Anti-Patterns into unified 10-item section with mode-scoped guidance (e.g., "Over-constraining colors in page prompts" vs "defining tokens in Design System mode")
+
+### Fixed
+- **v0-design description field** — "researches design references" → "researches user-specified design references" (prevented agents from proactively researching design systems)
+- **v0-design theme question** — rephrased from "Fresh theme or match existing project colors?" to "Should v0 design within your existing color palette, or choose its own?" (keeps v0 positioned as aesthetic decision-maker)
+- Plugin version sync — plugin.json and marketplace.json now match package.json (were stuck at 1.4.0)
+
 ## v1.4.1 (2026-03-20)
 
 ### Fixed

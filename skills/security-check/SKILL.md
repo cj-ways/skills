@@ -10,6 +10,13 @@ effort: medium
 
 Quick security sanity check. Not a full SAST — catches the most common issues fast.
 
+## Gotchas
+
+1. **Flagging test fixtures as real secrets.** Test files intentionally contain fake API keys, tokens, and passwords for testing. Unless the value matches a known production pattern prefix (`AKIA`, `sk_live_`, `ghp_`), do not flag test file secrets as CRITICAL.
+2. **Flagging environment variable NAMES (not values) as leaks.** Code that references `process.env.STRIPE_SECRET_KEY` is reading a variable name, not leaking a secret. Only flag when an actual secret VALUE is hardcoded (e.g., `const key = "sk_live_abc123"`).
+3. **Missing secrets in non-standard locations.** Do not only scan `src/` and `.env`. Also check: `.env.local`, `.env.production`, `docker-compose.yml` (environment sections), CI config files (`.github/workflows/*.yml`, `.gitlab-ci.yml`), and `Makefile` / shell scripts.
+4. **Not checking sibling projects for shared secrets.** If the project is in a monorepo or shares a parent directory with other projects, secrets from one project may leak into another via shared config files or symlinks. Flag this as a review item if detected.
+
 ## Argument Parsing
 
 Parse the argument to determine scope:
@@ -186,11 +193,3 @@ Not all pattern matches are equal. Before reporting a finding, assess its contex
 
 When unsure, classify at WARNING (not CRITICAL) to avoid alarm fatigue, but do not suppress to INFO.
 
-## Common Agent Gotchas
-
-These are frequent mistakes agents make when executing this skill. Avoid them:
-
-1. **Flagging test fixtures as real secrets.** Test files intentionally contain fake API keys, tokens, and passwords for testing. Unless the value matches a known production pattern prefix (`AKIA`, `sk_live_`, `ghp_`), do not flag test file secrets as CRITICAL.
-2. **Flagging environment variable NAMES (not values) as leaks.** Code that references `process.env.STRIPE_SECRET_KEY` is reading a variable name, not leaking a secret. Only flag when an actual secret VALUE is hardcoded (e.g., `const key = "sk_live_abc123"`).
-3. **Missing secrets in non-standard locations.** Do not only scan `src/` and `.env`. Also check: `.env.local`, `.env.production`, `docker-compose.yml` (environment sections), CI config files (`.github/workflows/*.yml`, `.gitlab-ci.yml`), and `Makefile` / shell scripts.
-4. **Not checking sibling projects for shared secrets.** If the project is in a monorepo or shares a parent directory with other projects, secrets from one project may leak into another via shared config files or symlinks. Flag this as a review item if detected.

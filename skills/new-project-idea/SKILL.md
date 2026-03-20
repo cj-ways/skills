@@ -12,6 +12,14 @@ The user has a new project idea. Your job is to critically analyze it, then scaf
 
 **Input**: $ARGUMENTS (the project idea - may be rough/unpolished, that's expected)
 
+## Gotchas
+
+1. **Suggesting a stack the user explicitly doesn't want.** Always check `$ARGUMENTS` for stack hints or preferences. If the user says "use Svelte" or "no Next.js", respect that. Do not default to the AI-optimized stack blindly.
+2. **Over-scoping Phase 1.** The MVP should be minimal, not feature-complete. Phase 1 is foundations: types, data model, basic infrastructure. If Phase 1 has more than 8-10 tasks, it is too big. Split it.
+3. **Creating files before the user confirms the plan.** Steps 1-5 are analysis and planning. Do NOT scaffold directories, write CLAUDE.md, or create any files until the user explicitly approves the phase plan in Step 5.
+4. **Not reading the existing directory structure.** The target project directory may already have files (e.g., user ran `create-next-app` manually, or there is a previous attempt). Always check with `ls` before creating anything. Adapt to what exists instead of overwriting.
+5. **Forgetting to add the project to MEMORY.md.** After setup, add an entry to the user's MEMORY.md (projects section) with the project name, path, and one-line description. This ensures future agent sessions have continuity and can find the project.
+
 ---
 
 ## Step 1: Deep Analysis (DO NOT SKIP)
@@ -184,12 +192,3 @@ Present a clean summary:
 - The phase execution protocol is NON-NEGOTIABLE. Every project gets it.
 - Prefer free-tier services unless the user explicitly says they'll pay.
 
-## Common Agent Gotchas
-
-These are frequent mistakes agents make when executing this skill. Avoid them:
-
-1. **Suggesting a stack the user explicitly doesn't want.** Always check `$ARGUMENTS` for stack hints or preferences. If the user says "use Svelte" or "no Next.js", respect that. Do not default to the AI-optimized stack blindly.
-2. **Over-scoping Phase 1.** The MVP should be minimal, not feature-complete. Phase 1 is foundations: types, data model, basic infrastructure. If Phase 1 has more than 8-10 tasks, it is too big. Split it.
-3. **Creating files before the user confirms the plan.** Steps 1-5 are analysis and planning. Do NOT scaffold directories, write CLAUDE.md, or create any files until the user explicitly approves the phase plan in Step 5.
-4. **Not reading the existing directory structure.** The target project directory may already have files (e.g., user ran `create-next-app` manually, or there is a previous attempt). Always check with `ls` before creating anything. Adapt to what exists instead of overwriting.
-5. **Forgetting to add the project to MEMORY.md.** After setup, add an entry to the user's MEMORY.md (projects section) with the project name, path, and one-line description. This ensures future agent sessions have continuity and can find the project.

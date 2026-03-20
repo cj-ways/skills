@@ -20,6 +20,13 @@ Analyzes the diff between two branches and produces actionable pre-release and p
 
 If `$ARGUMENTS` is provided, parse as `<source> <target>`. If only one argument, treat as source with `main`/`master` as target.
 
+## Gotchas
+
+1. **Missing env vars referenced indirectly.** Not all env vars appear as literal `process.env.VAR_NAME`. Look for spread operators (`...process.env`), dynamic key access (`process.env[key]`), config wrappers that read env vars internally (e.g., `config.get('DATABASE_URL')` where the config module reads from `process.env`), and `.env` file parsing libraries. Grep for the env var pattern AND read config/settings modules to catch indirect references.
+2. **Not detecting renamed env vars.** If an old env var is removed and a new one is added (e.g., `DB_URL` replaced by `DATABASE_URL`), this is a migration that requires coordination: the old var must stay during rollout, the new var must be set, and the old one removed after full deploy. Flag renamed env vars explicitly.
+3. **Database migrations that need to run BEFORE vs AFTER deployment.** Additive migrations (new tables, new nullable columns) are safe to run before deploy. Destructive migrations (drop column, rename table, change type) must be coordinated: deploy code that handles both old and new schema first, then run migration, then remove old-schema code. Flag migration timing explicitly.
+4. **Ignoring feature flags that gate the new code.** If new code is behind a feature flag that defaults to OFF, the deployment is safe even without running migrations or setting new env vars immediately. Check for feature flag gates and note when they make a deploy item lower priority than it appears.
+
 ## Steps
 
 ### Step 1: Validate branches, detect stack, and collect diff
@@ -367,11 +374,3 @@ Present the report in this structure:
 
 Do NOT commit or modify anything. Present the full report for user review.
 
-## Common Agent Gotchas
-
-These are frequent mistakes agents make when executing this skill. Avoid them:
-
-1. **Missing env vars referenced indirectly.** Not all env vars appear as literal `process.env.VAR_NAME`. Look for spread operators (`...process.env`), dynamic key access (`process.env[key]`), config wrappers that read env vars internally (e.g., `config.get('DATABASE_URL')` where the config module reads from `process.env`), and `.env` file parsing libraries. Grep for the env var pattern AND read config/settings modules to catch indirect references.
-2. **Not detecting renamed env vars.** If an old env var is removed and a new one is added (e.g., `DB_URL` replaced by `DATABASE_URL`), this is a migration that requires coordination: the old var must stay during rollout, the new var must be set, and the old one removed after full deploy. Flag renamed env vars explicitly.
-3. **Database migrations that need to run BEFORE vs AFTER deployment.** Additive migrations (new tables, new nullable columns) are safe to run before deploy. Destructive migrations (drop column, rename table, change type) must be coordinated: deploy code that handles both old and new schema first, then run migration, then remove old-schema code. Flag migration timing explicitly.
-4. **Ignoring feature flags that gate the new code.** If new code is behind a feature flag that defaults to OFF, the deployment is safe even without running migrations or setting new env vars immediately. Check for feature flag gates and note when they make a deploy item lower priority than it appears.

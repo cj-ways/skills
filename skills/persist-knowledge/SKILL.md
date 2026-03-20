@@ -13,6 +13,13 @@ Two modes of operation:
 1. **Auto-invocation** — Agent detects the user sharing a global pattern/convention/rule mid-conversation and persists it immediately (lightweight, single-finding).
 2. **Manual invocation** (`/persist-knowledge`) — Full session scan at end of session, consolidates all findings.
 
+## Gotchas
+
+1. **Writing duplicate rules that already exist in CLAUDE.md.** Always search the target file before writing. Use Grep to check for keywords from the new rule. If a rule already covers the same ground — even with different wording — do not add a second version. Mark it as "Confirmed existing" and move on.
+2. **Persisting ephemeral/session-specific information.** Only persist things that apply across sessions. "We're debugging the auth bug" is session context, not a convention. "Auth tokens use RS256 signing" is a lasting convention. Ask: would this still be true and useful next week?
+3. **Writing to the wrong file.** Each target has a clear purpose — CLAUDE.md for project conventions and code patterns, `.claude/rules/` for enforcement rules that need their own file (>15 lines), MEMORY.md for personal preferences and session decisions. A naming convention does not belong in MEMORY.md. A personal workflow preference does not belong in CLAUDE.md.
+4. **Auto-triggering on casual statements.** Not every "I always do X" is a convention declaration. If the user says "I always forget to run tests" in a joking or off-hand context, that is not a rule to persist. Look for intentional, directive language: "from now on," "the convention is," "every X must have Y." When in doubt, do not persist — false persistence is worse than a missed convention.
+
 ## Auto-Invocation Mode
 
 **When to trigger:** The agent should invoke this skill when the user states something that looks like a **global codebase convention, pattern, or rule** — not a one-off task instruction. Signals include:
@@ -194,14 +201,3 @@ Before writing anything, understand where each type of finding belongs:
 1. Summary table (findings -> target -> action)
 2. Suggested commit message (if files were modified)
 
-## Gotchas
-
-Common failure modes to actively guard against:
-
-1. **Writing duplicate rules that already exist in CLAUDE.md.** Always search the target file before writing. Use Grep to check for keywords from the new rule. If a rule already covers the same ground — even with different wording — do not add a second version. Mark it as "Confirmed existing" and move on.
-
-2. **Persisting ephemeral/session-specific information.** Only persist things that apply across sessions. "We're debugging the auth bug" is session context, not a convention. "Auth tokens use RS256 signing" is a lasting convention. Ask: would this still be true and useful next week?
-
-3. **Writing to the wrong file.** Each target has a clear purpose — CLAUDE.md for project conventions and code patterns, `.claude/rules/` for enforcement rules that need their own file (>15 lines), MEMORY.md for personal preferences and session decisions. A naming convention does not belong in MEMORY.md. A personal workflow preference does not belong in CLAUDE.md.
-
-4. **Auto-triggering on casual statements.** Not every "I always do X" is a convention declaration. If the user says "I always forget to run tests" in a joking or off-hand context, that is not a rule to persist. Look for intentional, directive language: "from now on," "the convention is," "every X must have Y." When in doubt, do not persist — false persistence is worse than a missed convention.

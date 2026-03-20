@@ -17,6 +17,13 @@ Generate unit tests for existing code. Detects the test framework, matches exist
 
 If no file path is provided, ask the user which file they want tested.
 
+## Gotchas
+
+1. **Testing implementation instead of behavior (brittle tests).** Do not assert that a specific internal method was called, or that a specific intermediate variable has a value. Test the PUBLIC interface: given input X, expect output Y. If refactoring the internals breaks your tests but the behavior is unchanged, the tests are bad.
+2. **Using real API calls instead of mocks (flaky tests).** Never generate tests that hit real HTTP endpoints, real databases, or real file system paths. These will pass locally and fail in CI (or vice versa). Mock all external I/O. If the function makes a fetch call, mock fetch. If it reads a file, mock the file system.
+3. **Not matching the existing test file naming convention.** Check what the project already uses before choosing a filename. If existing tests use `*.spec.ts`, do not create `*.test.ts`. If they use `__tests__/` directories, do not create co-located files. Inconsistent naming conventions confuse both humans and CI test runners.
+4. **Forgetting to test error paths.** It is easy to generate 10 happy-path tests and zero error tests. Every function that can throw, reject, or return an error MUST have at least one test for that path. Check for try/catch, `.catch()`, error returns, and validation failures.
+
 ## Auto-Detection
 
 Run these checks before generating anything:
@@ -150,11 +157,3 @@ If any check fails, fix the generated tests before presenting them.
 - Keep generated test files clean — no commented-out code, no TODOs, no placeholder tests.
 - Present tests to the user for review BEFORE writing. Do not write without confirmation.
 
-## Common Agent Gotchas
-
-These are frequent mistakes agents make when executing this skill. Avoid them:
-
-1. **Testing implementation instead of behavior (brittle tests).** Do not assert that a specific internal method was called, or that a specific intermediate variable has a value. Test the PUBLIC interface: given input X, expect output Y. If refactoring the internals breaks your tests but the behavior is unchanged, the tests are bad.
-2. **Using real API calls instead of mocks (flaky tests).** Never generate tests that hit real HTTP endpoints, real databases, or real file system paths. These will pass locally and fail in CI (or vice versa). Mock all external I/O. If the function makes a fetch call, mock fetch. If it reads a file, mock the file system.
-3. **Not matching the existing test file naming convention.** Check what the project already uses before choosing a filename. If existing tests use `*.spec.ts`, do not create `*.test.ts`. If they use `__tests__/` directories, do not create co-located files. Inconsistent naming conventions confuse both humans and CI test runners.
-4. **Forgetting to test error paths.** It is easy to generate 10 happy-path tests and zero error tests. Every function that can throw, reject, or return an error MUST have at least one test for that path. Check for try/catch, `.catch()`, error returns, and validation failures.

@@ -24,6 +24,14 @@ Scope (optional):
 
 If `$ARGUMENTS` is provided, use it as scope filter.
 
+## Gotchas
+
+1. **Dynamic imports hide real usage.** `require(variable)`, `import(templateLiteral)`, and reflection-based loading (e.g., Go's `reflect` package, Python's `importlib`, Ruby's `const_get`) mean a symbol can be used without any grep-detectable static reference. When the project uses dynamic imports, downgrade affected findings to LIKELY UNUSED or VERIFY FIRST.
+2. **Framework magic makes files appear orphaned.** Next.js `page.tsx`/`layout.tsx`/`loading.tsx` files, Nuxt `pages/` and `middleware/`, Remix loaders, Rails convention-based routing, Django `urls.py` auto-discovery, and similar framework conventions mean files are "imported" by the framework itself, not by other source files. Know the framework and exclude its magic paths from orphan detection.
+3. **CSS class names in string templates are invisible to grep.** Template literals like `` `bg-${color}-500` `` or string concatenation like `"btn-" + variant` generate class names that grep will never match against the CSS source. If the project uses dynamic class names (especially Tailwind), flag CSS-related findings as VERIFY FIRST.
+4. **Exports used by external consumers are undetectable locally.** If the project is a published npm package, Go module, or Python library, its public exports may be consumed by other repositories. Check if the project has a `"main"` or `"exports"` field in `package.json`, or is referenced in a monorepo workspace. If so, flag public API exports as VERIFY FIRST, not SAFE TO DELETE.
+5. **Re-exports through barrel files mask real usage.** A symbol exported from `utils/helpers.ts` and re-exported via `utils/index.ts` may appear unused if you grep for `from './helpers'` but not `from './utils'` or `from '@/utils'`. Always trace through barrel files (index.ts/index.js) and check all possible import paths including aliases defined in `tsconfig.json` paths or `package.json` imports.
+
 ## Project Detection
 
 Before running any checks, detect the project language and framework:
@@ -214,12 +222,3 @@ For each finding, classify risk:
 
 Do NOT commit. Present the report for user review.
 
-## Common Agent Gotchas
-
-These are frequent mistakes agents make when executing this skill. Avoid them:
-
-1. **Dynamic imports hide real usage.** `require(variable)`, `import(templateLiteral)`, and reflection-based loading (e.g., Go's `reflect` package, Python's `importlib`, Ruby's `const_get`) mean a symbol can be used without any grep-detectable static reference. When the project uses dynamic imports, downgrade affected findings to LIKELY UNUSED or VERIFY FIRST.
-2. **Framework magic makes files appear orphaned.** Next.js `page.tsx`/`layout.tsx`/`loading.tsx` files, Nuxt `pages/` and `middleware/`, Remix loaders, Rails convention-based routing, Django `urls.py` auto-discovery, and similar framework conventions mean files are "imported" by the framework itself, not by other source files. Know the framework and exclude its magic paths from orphan detection.
-3. **CSS class names in string templates are invisible to grep.** Template literals like `` `bg-${color}-500` `` or string concatenation like `"btn-" + variant` generate class names that grep will never match against the CSS source. If the project uses dynamic class names (especially Tailwind), flag CSS-related findings as VERIFY FIRST.
-4. **Exports used by external consumers are undetectable locally.** If the project is a published npm package, Go module, or Python library, its public exports may be consumed by other repositories. Check if the project has a `"main"` or `"exports"` field in `package.json`, or is referenced in a monorepo workspace. If so, flag public API exports as VERIFY FIRST, not SAFE TO DELETE.
-5. **Re-exports through barrel files mask real usage.** A symbol exported from `utils/helpers.ts` and re-exported via `utils/index.ts` may appear unused if you grep for `from './helpers'` but not `from './utils'` or `from '@/utils'`. Always trace through barrel files (index.ts/index.js) and check all possible import paths including aliases defined in `tsconfig.json` paths or `package.json` imports.

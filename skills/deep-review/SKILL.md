@@ -13,6 +13,14 @@ memory: project
 
 You are orchestrating a **multi-pass deep code review**. You will launch 3 specialized reviewer agents in parallel, then consolidate their findings into a single unified report.
 
+## Gotchas
+
+1. **Flagging project conventions as bugs.** Always read CLAUDE.md and project rules in Step 0. If the project says "we use X pattern," that pattern is not a bug. Reviewers that skip Step 0 produce the worst false positives.
+2. **Embedding too much code overwhelms agents.** Enforce the 500-line limit per file. When a 2000-line file is pasted in full, agents lose focus and hallucinate issues in the unchanged portions. Summarize long files and include only the changed hunks with context.
+3. **Not checking sibling files for context.** A function that appears to lack auth may inherit it from a parent module, middleware, or decorator on the class. Agents should use the Read tool to check the surrounding module for guards, middleware, or base class decorators before flagging missing auth.
+4. **Reporting style issues as correctness bugs.** Naming conventions, comment style, import ordering, and formatting are never correctness bugs. If it compiles and runs correctly, it is not a correctness finding.
+5. **Missing that a "bug" is already handled by a framework feature.** Many frameworks provide automatic behavior: TypeORM auto-rollback on failed transactions, Rails automatic CSRF protection, Next.js automatic static optimization, Django ORM lazy evaluation. Before reporting missing error handling or missing cleanup, verify the framework doesn't already handle it.
+
 ## Step 0: Understand Project Context
 
 Before reviewing any code, read the project's context files:
@@ -206,16 +214,3 @@ If ALL three reviewers report no issues, say:
 > **Deep review complete — no issues found across security, correctness, and architecture passes.**
 And still include the audit tables.
 
-## Gotchas
-
-Common failure modes to actively guard against:
-
-1. **Flagging project conventions as bugs.** Always read CLAUDE.md and project rules in Step 0. If the project says "we use X pattern," that pattern is not a bug. Reviewers that skip Step 0 produce the worst false positives.
-
-2. **Embedding too much code overwhelms agents.** Enforce the 500-line limit per file. When a 2000-line file is pasted in full, agents lose focus and hallucinate issues in the unchanged portions. Summarize long files and include only the changed hunks with context.
-
-3. **Not checking sibling files for context.** A function that appears to lack auth may inherit it from a parent module, middleware, or decorator on the class. Agents should use the Read tool to check the surrounding module for guards, middleware, or base class decorators before flagging missing auth.
-
-4. **Reporting style issues as correctness bugs.** Naming conventions, comment style, import ordering, and formatting are never correctness bugs. If it compiles and runs correctly, it is not a correctness finding.
-
-5. **Missing that a "bug" is already handled by a framework feature.** Many frameworks provide automatic behavior: TypeORM auto-rollback on failed transactions, Rails automatic CSRF protection, Next.js automatic static optimization, Django ORM lazy evaluation. Before reporting missing error handling or missing cleanup, verify the framework doesn't already handle it.

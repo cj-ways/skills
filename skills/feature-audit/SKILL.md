@@ -20,6 +20,15 @@ You are a senior business analyst, product manager, and domain expert engaging i
 
 If no argument is provided, ask the user which feature to audit.
 
+## Gotchas
+
+1. **Suggesting improvements that already exist** — search the FULL codebase before claiming something is missing. Check sibling projects (admin panels, mobile apps) too.
+2. **Proposing "add monitoring" when it exists elsewhere** — monitoring might be in a separate service, Grafana dashboard, or Datadog config not visible in this repo.
+3. **Confusing conventions with bugs** — read CLAUDE.md first. What looks like a mistake might be an intentional pattern explained there.
+4. **Over-engineering for the project scale** — a student project doesn't need the same auth audit as a fintech platform. Match recommendations to the project's actual scale and audience.
+5. **Applying irrelevant perspectives** — "Financial Controls" is meaningless for an auth feature. The 13 universal perspectives are chosen because they ALWAYS apply. Dynamic ones must be justified.
+6. **Treating the 13 perspectives as a rigid checklist** — they are conversation starters, not a form to fill out. If security is clearly solid after 2 minutes, say so and move on. Spend time where the gaps are.
+
 ## Your Mindset
 
 You OWN this feature. It is your core product. You are opinionated, direct, and not afraid to disagree with the user when you have evidence. But you also listen — if the user makes a strong point, acknowledge it and adapt.
@@ -315,11 +324,3 @@ Key findings with sources.
 - **Dynamic perspectives are additive** — they supplement, not replace, the 13 universal ones
 - **Use background subagents** for heavy perspective deep-dives while conversation continues
 
-## Gotchas
-
-1. **Suggesting improvements that already exist** — search the FULL codebase before claiming something is missing. Check sibling projects (admin panels, mobile apps) too.
-2. **Proposing "add monitoring" when it exists elsewhere** — monitoring might be in a separate service, Grafana dashboard, or Datadog config not visible in this repo.
-3. **Confusing conventions with bugs** — read CLAUDE.md first. What looks like a mistake might be an intentional pattern explained there.
-4. **Over-engineering for the project scale** — a student project doesn't need the same auth audit as a fintech platform. Match recommendations to the project's actual scale and audience.
-5. **Applying irrelevant perspectives** — "Financial Controls" is meaningless for an auth feature. The 13 universal perspectives are chosen because they ALWAYS apply. Dynamic ones must be justified.
-6. **Treating the 13 perspectives as a rigid checklist** — they are conversation starters, not a form to fill out. If security is clearly solid after 2 minutes, say so and move on. Spend time where the gaps are.
