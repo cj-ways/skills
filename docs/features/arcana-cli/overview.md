@@ -6,7 +6,7 @@ A CLI tool that installs, manages, and syncs curated agent skills across Claude 
 
 ## Architecture
 
-Entry point: `bin/arcana.js` (Commander.js). 9 commands, 3 utility modules, 4 dependencies (commander, inquirer, chalk, fs-extra).
+Entry point: `bin/arcana.js` (Commander.js). 10 commands, 4 utility modules, 4 dependencies (commander, inquirer, chalk, fs-extra). 1 dev dependency (vitest).
 
 ### Skill Categories
 
@@ -29,7 +29,8 @@ Entry point: `bin/arcana.js` (Commander.js). 9 commands, 3 utility modules, 4 de
 | `find-unused` | Dead code detection with confidence tiers |
 | `persist-knowledge` | Save patterns and conventions to project docs |
 | `agent-audit` | Audit agent configuration against best practices |
-| `import-skill` | Bring external skills into the Arcana ecosystem |
+| `import-skill` | Adapt imported skills to Arcana quality standards |
+| `skill-scout` | Scout providers for skills your project needs |
 
 ### Supported Agents
 
@@ -37,6 +38,15 @@ Entry point: `bin/arcana.js` (Commander.js). 9 commands, 3 utility modules, 4 de
 |-------|-----------------|-----------|
 | Claude Code | `.claude/skills/` | `CLAUDE.md` or `.claude/` exists |
 | Codex CLI | `.agents/skills/` | `AGENTS.md` or `.codex/` exists |
-| Multi (both) | `.agents/skills/` (canonical) | 2+ agents detected |
+| Multi (both) | `.agents/skills/` (canonical) | Both detected |
 
 Multi-agent mode uses `.agents/skills/` as the canonical source and mirrors to `.claude/skills/`.
+
+### Utility Modules
+
+| Module | Purpose |
+|--------|---------|
+| `paths.js` | Path resolution, skill/agent discovery |
+| `detect.js` | Agent auto-detection (Claude, Codex) |
+| `copy.js` | File copying, conflict detection, markers |
+| `frontmatter.js` | Shared YAML frontmatter parser |
