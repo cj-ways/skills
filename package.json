@@ -7,7 +7,9 @@
   },
   "type": "module",
   "scripts": {
-    "test": "node bin/arcana.js --version && node bin/arcana.js list && node bin/arcana.js doctor"
+    "test": "node bin/arcana.js --version && node bin/arcana.js list && node bin/arcana.js doctor",
+    "test:unit": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [
     "arcana",
@@ -32,10 +34,10 @@
     "node": ">=18"
   },
   "dependencies": {
-    "commander": "^13.0.0",
-    "inquirer": "^12.0.0",
     "chalk": "^5.4.0",
-    "fs-extra": "^11.3.0"
+    "commander": "^13.0.0",
+    "fs-extra": "^11.3.0",
+    "inquirer": "^12.0.0"
   },
   "files": [
     "bin/",
@@ -48,5 +50,8 @@
     "SKILL-AUTHORING-REFERENCE.md",
     "README.md",
     "LICENSE"
-  ]
+  ],
+  "devDependencies": {
+    "vitest": "^4.1.0"
+  }
 }

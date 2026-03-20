@@ -24,6 +24,9 @@ jobs:
 
       - run: npm test
 
+      - name: Unit tests
+        run: npm run test:unit
+
       - name: CLI smoke test
         run: |
           node bin/arcana.js --version
