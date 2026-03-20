@@ -133,6 +133,6 @@ export async function runUpdate() {
   const canonical = join(cwd, ".agents", "skills");
   if (existsSync(canonical) && updated > 0) {
     console.log(chalk.dim("  Syncing multi-agent mirrors...\n"));
-    await runSync();
+    await runSync({ clean: true });
   }
 }

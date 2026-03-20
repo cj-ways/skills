@@ -8,7 +8,7 @@ import { getAvailableSkills, getAvailableAgents } from "../utils/paths.js";
 export async function runRemove(skills) {
   if (!skills || skills.length === 0) {
     console.log(chalk.yellow("Usage: arcana remove <skill-name> [skill-name...]"));
-    return;
+    process.exit(1);
   }
 
   const allSkills = getAvailableSkills();
