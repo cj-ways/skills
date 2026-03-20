@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.4.1 (2026-03-20)
+
+### Fixed
+- **CRITICAL**: Legacy Arcana skills (pre-1.4.0) were falsely detected as "custom" conflicts — improved `isArcanaManaged()` with frontmatter name matching fallback
+- Rules warning no longer fires when existing rules are Arcana's own rules from a prior install
+
+### Added
+- Interactive conflict resolution during `init`: Override all / Rename my skills / Skip
+- `arcana add --force` flag to bypass conflict detection
+- `renameExistingSkill()` and `renameExistingAgent()` utilities for the rename flow
+- CI test script (`npm test` runs CLI smoke tests)
+
 ## v1.4.0 (2026-03-20)
 
 ### Added

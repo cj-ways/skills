@@ -1,18 +1,36 @@
 import fsExtra from "fs-extra";
-const { copySync, ensureDirSync, existsSync, readFileSync } = fsExtra;
+const { copySync, ensureDirSync, existsSync, readFileSync, moveSync } = fsExtra;
 import { join } from "path";
-import { getPackageSkillsDir, getPackageAgentsDir } from "./paths.js";
+import { getPackageSkillsDir, getPackageAgentsDir, getAvailableSkills, getAvailableAgents } from "./paths.js";
 
 const ARCANA_MARKER = "<!-- arcana-managed -->";
 
 /**
  * Check if a file was installed by Arcana (has the marker comment)
- * or is a user-created file.
+ * or is a legacy Arcana install (pre-1.4.0, no marker but frontmatter name matches).
  */
 function isArcanaManaged(filePath) {
   try {
     const content = readFileSync(filePath, "utf-8");
-    return content.includes(ARCANA_MARKER);
+
+    // Definitive: v1.4.0+ marker
+    if (content.includes(ARCANA_MARKER)) return true;
+
+    // Legacy detection: pre-1.4.0 Arcana installs have no marker.
+    // Check if the frontmatter `name:` matches a known Arcana skill/agent.
+    const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
+    if (fmMatch) {
+      const frontmatter = fmMatch[1];
+      const nameMatch = frontmatter.match(/^name:\s*['"]?([^'"\n]+)/m);
+      if (nameMatch) {
+        const name = nameMatch[1].trim().replace(/['"]$/g, "");
+        const allSkills = getAvailableSkills();
+        const allAgents = getAvailableAgents();
+        if (allSkills.includes(name) || allAgents.includes(name)) return true;
+      }
+    }
+
+    return false;
   } catch {
     return false;
   }
@@ -32,7 +50,7 @@ function addMarker(content) {
   return ARCANA_MARKER + "\n" + content;
 }
 
-export function copySkills(skillNames, targetSkillsDir) {
+export function copySkills(skillNames, targetSkillsDir, { force = false } = {}) {
   const sourceDir = getPackageSkillsDir();
   const results = [];
 
@@ -47,7 +65,7 @@ export function copySkills(skillNames, targetSkillsDir) {
     }
 
     // Check for conflict: destination exists and is NOT managed by Arcana
-    if (existsSync(destSkillMd) && !isArcanaManaged(destSkillMd)) {
+    if (!force && existsSync(destSkillMd) && !isArcanaManaged(destSkillMd)) {
       results.push({ name, status: "conflict" });
       continue;
     }
@@ -69,7 +87,7 @@ export function copySkills(skillNames, targetSkillsDir) {
   return results;
 }
 
-export function copyAgents(agentNames, targetAgentsDir) {
+export function copyAgents(agentNames, targetAgentsDir, { force = false } = {}) {
   if (!targetAgentsDir) return [];
 
   const sourceDir = getPackageAgentsDir();
@@ -85,7 +103,7 @@ export function copyAgents(agentNames, targetAgentsDir) {
     }
 
     // Check for conflict
-    if (existsSync(dest) && !isArcanaManaged(dest)) {
+    if (!force && existsSync(dest) && !isArcanaManaged(dest)) {
       results.push({ name, status: "conflict" });
       continue;
     }
@@ -103,6 +121,52 @@ export function copyAgents(agentNames, targetAgentsDir) {
   }
 
   return results;
+}
+
+export function renameExistingSkill(skillsDir, oldName, newName) {
+  const oldPath = join(skillsDir, oldName);
+  const newPath = join(skillsDir, newName);
+
+  if (!existsSync(oldPath)) return false;
+  if (existsSync(newPath)) return false;
+
+  moveSync(oldPath, newPath);
+
+  // Update name in SKILL.md frontmatter
+  const skillMd = join(newPath, "SKILL.md");
+  if (existsSync(skillMd)) {
+    let content = readFileSync(skillMd, "utf-8");
+    content = content.replace(
+      /^(---\n[\s\S]*?name:\s*)['"]?[^'"\n]+/m,
+      `$1${newName}`
+    );
+    fsExtra.writeFileSync(skillMd, content);
+  }
+
+  return true;
+}
+
+export function renameExistingAgent(agentsDir, oldName, newName) {
+  const oldPath = join(agentsDir, `${oldName}.md`);
+  const newPath = join(agentsDir, `${newName}.md`);
+
+  if (!existsSync(oldPath)) return false;
+  if (existsSync(newPath)) return false;
+
+  moveSync(oldPath, newPath);
+
+  // Update name in frontmatter
+  let content = readFileSync(newPath, "utf-8");
+  const fmMatch = content.match(/^(---\n[\s\S]*?name:\s*)['"]?[^'"\n]+/m);
+  if (fmMatch) {
+    content = content.replace(
+      /^(---\n[\s\S]*?name:\s*)['"]?[^'"\n]+/m,
+      `$1${newName}`
+    );
+    fsExtra.writeFileSync(newPath, content);
+  }
+
+  return true;
 }
 
 export function mirrorSkills(canonicalDir, mirrorDirs) {

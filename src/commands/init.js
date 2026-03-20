@@ -9,7 +9,7 @@ import {
   getAvailableAgents,
   getPackageRulesDir,
 } from "../utils/paths.js";
-import { copySkills, copyAgents, mirrorSkills } from "../utils/copy.js";
+import { copySkills, copyAgents, mirrorSkills, renameExistingSkill, renameExistingAgent } from "../utils/copy.js";
 import fsExtra from "fs-extra";
 const { copySync: fsCopySync, ensureDirSync } = fsExtra;
 import { appendAgentsMdBlock } from "./sync.js";
@@ -44,6 +44,114 @@ function copyRules(targetDir) {
     results.push({ name: file, status: "installed" });
   }
   return results;
+}
+
+async function resolveConflicts(conflicts, dirs) {
+  console.log(chalk.yellow(`\n⚠ ${conflicts.length} name conflict(s) detected:`));
+  for (const c of conflicts) {
+    console.log(chalk.yellow(`  ${c.name} (${c.type}) — you have a custom ${c.type} with this name`));
+  }
+
+  const { resolution } = await inquirer.prompt([
+    {
+      type: "list",
+      name: "resolution",
+      message: "How do you want to handle these conflicts?",
+      choices: [
+        { name: "Override all — replace with Arcana versions", value: "override" },
+        { name: "Rename my skills — keep both (you pick new names)", value: "rename" },
+        { name: "Skip — keep your versions, don't install Arcana's", value: "skip" },
+      ],
+    },
+  ]);
+
+  let installed = 0;
+
+  if (resolution === "override") {
+    const skillConflicts = conflicts.filter((c) => c.type === "skill").map((c) => c.name);
+    const agentConflicts = conflicts.filter((c) => c.type === "agent").map((c) => c.name);
+
+    if (skillConflicts.length > 0) {
+      const results = copySkills(skillConflicts, dirs.skills, { force: true });
+      for (const r of results) {
+        if (r.status === "installed") {
+          console.log(chalk.green(`  ✓ ${r.name} (overwritten)`));
+          installed++;
+        }
+      }
+    }
+    if (agentConflicts.length > 0 && dirs.agents) {
+      const results = copyAgents(agentConflicts, dirs.agents, { force: true });
+      for (const r of results) {
+        if (r.status === "installed") {
+          console.log(chalk.green(`  ✓ ${r.name} (agent, overwritten)`));
+          installed++;
+        }
+      }
+    }
+  } else if (resolution === "rename") {
+    for (const c of conflicts) {
+      const targetDir = c.type === "skill" ? dirs.skills : dirs.agents;
+
+      const { newName } = await inquirer.prompt([
+        {
+          type: "input",
+          name: "newName",
+          message: `Rename your "${c.name}" ${c.type} to:`,
+          default: `my-${c.name}`,
+          validate: (input) => {
+            const trimmed = input.trim();
+            if (!trimmed) return "Name cannot be empty";
+            if (trimmed === c.name) return "Must be different from current name";
+            if (/[^a-zA-Z0-9_-]/.test(trimmed)) return "Use only letters, numbers, hyphens, underscores";
+            if (c.type === "skill" && existsSync(join(targetDir, trimmed))) {
+              return `"${trimmed}" already exists`;
+            }
+            if (c.type === "agent" && existsSync(join(targetDir, `${trimmed}.md`))) {
+              return `"${trimmed}" already exists`;
+            }
+            return true;
+          },
+        },
+      ]);
+
+      const renamed = c.type === "skill"
+        ? renameExistingSkill(targetDir, c.name, newName.trim())
+        : renameExistingAgent(targetDir, c.name, newName.trim());
+
+      if (renamed) {
+        console.log(chalk.dim(`  ↳ ${c.name} → ${newName.trim()}`));
+      } else {
+        console.log(chalk.red(`  ✗ Failed to rename ${c.name}`));
+      }
+    }
+
+    // Now install Arcana versions in the freed-up names
+    const skillConflicts = conflicts.filter((c) => c.type === "skill").map((c) => c.name);
+    const agentConflicts = conflicts.filter((c) => c.type === "agent").map((c) => c.name);
+
+    if (skillConflicts.length > 0) {
+      const results = copySkills(skillConflicts, dirs.skills);
+      for (const r of results) {
+        if (r.status === "installed") {
+          console.log(chalk.green(`  ✓ ${r.name}`));
+          installed++;
+        }
+      }
+    }
+    if (agentConflicts.length > 0 && dirs.agents) {
+      const results = copyAgents(agentConflicts, dirs.agents);
+      for (const r of results) {
+        if (r.status === "installed") {
+          console.log(chalk.green(`  ✓ ${r.name} (agent)`));
+          installed++;
+        }
+      }
+    }
+  }
+  // "skip" = do nothing
+
+  return installed;
 }
 
 export async function runInit() {
@@ -183,7 +291,7 @@ export async function runInit() {
     if (r.status === "installed") {
       console.log(chalk.green(`  ✓ ${r.name}`));
     } else if (r.status === "conflict") {
-      console.log(chalk.yellow(`  ⚠ ${r.name} — name conflict (you have a custom skill with this name)`));
+      console.log(chalk.yellow(`  ⚠ ${r.name} — name conflict`));
       conflicts.push({ name: r.name, type: "skill" });
     } else {
       console.log(chalk.red(`  ✗ ${r.name} — ${r.status}`));
@@ -197,7 +305,7 @@ export async function runInit() {
       if (r.status === "installed") {
         console.log(chalk.green(`  ✓ ${r.name} (agent)`));
       } else if (r.status === "conflict") {
-        console.log(chalk.yellow(`  ⚠ ${r.name} — name conflict (you have a custom agent with this name)`));
+        console.log(chalk.yellow(`  ⚠ ${r.name} — name conflict (agent)`));
         conflicts.push({ name: r.name, type: "agent" });
       } else {
         console.log(chalk.red(`  ✗ ${r.name} — ${r.status}`));
@@ -205,14 +313,10 @@ export async function runInit() {
     }
   }
 
-  // Handle conflicts
+  // Handle conflicts interactively
+  let conflictResolved = 0;
   if (conflicts.length > 0) {
-    console.log(chalk.yellow(`\n⚠ ${conflicts.length} name conflict(s) detected:`));
-    for (const c of conflicts) {
-      console.log(chalk.yellow(`  ${c.name} (${c.type}) — your custom ${c.type} has the same name as an Arcana ${c.type}`));
-    }
-    console.log(chalk.dim(`\n  Arcana skipped these to preserve your custom ${conflicts.length === 1 ? 'file' : 'files'}.`));
-    console.log(chalk.dim(`  To use Arcana's version: rename your custom ${conflicts.length === 1 ? 'file' : 'files'}, then run \`arcana add ${conflicts.map(c => c.name).join(' ')}\``));
+    conflictResolved = await resolveConflicts(conflicts, dirs);
   }
 
   // Multi-agent: mirror to agent-specific dirs
@@ -235,10 +339,14 @@ export async function runInit() {
     const base = scope === "user" ? (await import("os")).homedir() : process.cwd();
     const rulesTargetDir = join(base, ".claude", "rules");
 
-    // Check for existing rules before copying
-    const hadExistingRules =
-      existsSync(rulesTargetDir) &&
-      readdirSync(rulesTargetDir).filter((f) => f.endsWith(".md")).length > 0;
+    // Check for existing NON-ARCANA rules before copying
+    const arcanaRuleNames = existsSync(getPackageRulesDir())
+      ? readdirSync(getPackageRulesDir()).filter((f) => f.endsWith(".md"))
+      : [];
+    const existingRuleFiles = existsSync(rulesTargetDir)
+      ? readdirSync(rulesTargetDir).filter((f) => f.endsWith(".md"))
+      : [];
+    const nonArcanaRules = existingRuleFiles.filter((f) => !arcanaRuleNames.includes(f));
 
     const rulesResults = copyRules(rulesTargetDir);
     rulesCount = rulesResults.filter((r) => r.status === "installed").length;
@@ -251,20 +359,23 @@ export async function runInit() {
       }
     }
 
-    if (hadExistingRules) {
+    if (nonArcanaRules.length > 0) {
       console.log(
         chalk.yellow(
-          "\n  ⚠ You have existing rules. Run /agent-audit rules to check for conflicts with Arcana rules."
+          `\n  ⚠ You have ${nonArcanaRules.length} non-Arcana rule(s): ${nonArcanaRules.join(", ")}`
+        )
+      );
+      console.log(
+        chalk.yellow(
+          "    Run /agent-audit rules to check for conflicts with Arcana rules."
         )
       );
     }
   }
 
   // Summary
-  const installed = skillResults.filter((r) => r.status === "installed").length;
-  const agentCount = dirs.agents
-    ? selectedAgents.length
-    : 0;
+  const installed = skillResults.filter((r) => r.status === "installed").length + conflictResolved;
+  const agentCount = dirs.agents ? selectedAgents.length : 0;
 
   const rulesSuffix = rulesCount > 0 ? ` + ${rulesCount} rules` : "";
   console.log(

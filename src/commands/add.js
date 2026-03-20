@@ -20,6 +20,7 @@ export async function runAdd(skills, opts) {
   const agent = opts.agent || detectAgent();
   const scope = opts.scope || detectScope();
   const dirs = getTargetDirs(agent, scope);
+  const force = opts.force || false;
 
   const allSkills = getAvailableSkills();
   const allAgents = getAvailableAgents();
@@ -47,13 +48,13 @@ export async function runAdd(skills, opts) {
 
   // Install skills
   if (skillNames.length > 0) {
-    const results = copySkills(skillNames, dirs.skills);
+    const results = copySkills(skillNames, dirs.skills, { force });
     for (const r of results) {
       if (r.status === "installed") {
         console.log(chalk.green(`  ✓ ${r.name}`));
       } else if (r.status === "conflict") {
         console.log(chalk.yellow(`  ⚠ ${r.name} — skipped (you have a custom skill with this name)`));
-        console.log(chalk.dim(`    Rename your skill to use Arcana's version, or use \`arcana use ${r.name}\` to view it.`));
+        console.log(chalk.dim(`    Use --force to override, or rename your skill first.`));
       } else {
         console.log(chalk.red(`  ✗ ${r.name} — ${r.status}`));
       }
@@ -69,10 +70,13 @@ export async function runAdd(skills, opts) {
   // Install agents (either explicitly named or all when --all)
   const agentsToInstall = opts.all ? allAgents : agentNames;
   if (agentsToInstall.length > 0 && dirs.agents) {
-    const results = copyAgents(agentsToInstall, dirs.agents);
+    const results = copyAgents(agentsToInstall, dirs.agents, { force });
     for (const r of results) {
       if (r.status === "installed") {
         console.log(chalk.green(`  ✓ ${r.name} (agent)`));
+      } else if (r.status === "conflict") {
+        console.log(chalk.yellow(`  ⚠ ${r.name} — skipped (you have a custom agent with this name)`));
+        console.log(chalk.dim(`    Use --force to override, or rename your agent first.`));
       } else {
         console.log(chalk.red(`  ✗ ${r.name} — ${r.status}`));
       }

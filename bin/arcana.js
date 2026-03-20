@@ -37,6 +37,7 @@ try {
     .command("add [skills...]")
     .description("Add specific skill(s) to the current setup")
     .option("--all", "Add all available skills")
+    .option("--force", "Override conflicts — replace existing skills with Arcana versions")
     .addOption(new Option("--agent <agent>", "Target agent").choices(["claude", "codex", "gemini", "multi"]).default("claude"))
     .addOption(new Option("--scope <scope>", "Install scope").choices(["project", "user"]).default("project"))
     .action(async (skills, opts) => {
