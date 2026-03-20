@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.7.0 (2026-03-21)
+
+### Added
+- **`skill-scout` skill** — scouts major skill providers (Anthropic, OpenAI, Google, Vercel) for skills that match the current project. Fetches catalogs, analyzes codebase, cross-matches gaps, recommends with evidence. Critical assessment — SKIP is the most common rating.
+- 14th skill in the collection.
+
+### Changed
+- Skill count updated across README, CLAUDE.md, package.json, plugin manifests (13 → 14).
+
 ## v1.6.1 (2026-03-21)
 
 ### Added

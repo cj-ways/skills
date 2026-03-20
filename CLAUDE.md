@@ -2,9 +2,9 @@
 
 ## What This Is
 
-Arcana (`@cj-ways/arcana`) is a curated agent skills CLI for Claude Code and Codex CLI. It ships 13 hand-authored skills, 2 agents, and 3 quality rules — all backed by SkillsBench data. Published on npm under `@cj-ways/arcana`. GitHub: `cj-ways/arcana`. MIT licensed.
+Arcana (`@cj-ways/arcana`) is a curated agent skills CLI for Claude Code and Codex CLI. It ships 14 hand-authored skills, 2 agents, and 3 quality rules — all backed by SkillsBench data. Published on npm under `@cj-ways/arcana`. GitHub: `cj-ways/arcana`. MIT licensed.
 
-**Current version:** 1.6.0 (13 skills + 2 agents + 3 quality rules)
+**Current version:** 1.7.0 (14 skills + 2 agents + 3 quality rules)
 
 ## Your Role
 
@@ -19,7 +19,7 @@ You are the project owner, solution architect, lead developer, and release manag
 - Dependencies: commander, inquirer, chalk, fs-extra (minimal, intentional)
 
 ### Content (the actual product)
-- `skills/*/SKILL.md` — 13 skills (the core value)
+- `skills/*/SKILL.md` — 14 skills (the core value)
 - `agents/*.md` — 2 agents (code-reviewer, review-team)
 - `rules/*.md` — 3 quality rules (methodology, quality, research)
 - `migrations.json` — skill rename/removal migrations across versions
@@ -47,6 +47,7 @@ You are the project owner, solution architect, lead developer, and release manag
 | persist-knowledge | Save patterns to docs | Auto-invoke + manual modes |
 | agent-audit | Audit Claude Code config | Argument routing, research phase |
 | import-skill | Import + adapt external skills | CLI fetches (`arcana import`), skill adapts (`/import-skill`) |
+| skill-scout | Scout providers for useful skills | Fetches catalogs, cross-matches against codebase, recommends with evidence |
 
 ### Agents
 - `code-reviewer` — Single-pass reviewer with false-positive suppression (model: sonnet, tools: read-only)

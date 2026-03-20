@@ -7,11 +7,11 @@
 
 Curated agent skills for **Claude Code** and **Codex CLI**.
 
-13 skills, 2 agents, 3 quality rules — all hand-authored against [SkillsBench](https://arxiv.org/abs/2602.12670) data (7,308 trajectories, +16.2pp improvement over no-skill baselines). Not scraped, not AI-generated.
+14 skills, 2 agents, 3 quality rules — all hand-authored against [SkillsBench](https://arxiv.org/abs/2602.12670) data (7,308 trajectories, +16.2pp improvement over no-skill baselines). Not scraped, not AI-generated.
 
 ## Why Arcana
 
-- **Quality over quantity.** 13 battle-tested skills backed by 22 cited sources. SkillsBench shows curated skills improve agent performance by +16.2pp — self-generated skills show -1.3pp (no benefit).
+- **Quality over quantity.** 14 battle-tested skills backed by 22 cited sources. SkillsBench shows curated skills improve agent performance by +16.2pp — self-generated skills show -1.3pp (no benefit).
 - **Multi-agent sync.** One skill set, synced across Claude Code and Codex CLI. Edit once in `.agents/skills/`, mirror everywhere with `arcana sync`.
 - **Extensible.** Need a skill Arcana doesn't ship? `import-skill` pulls from GitHub, URLs, or local files and adapts them to Arcana's quality standards.
 
@@ -54,6 +54,7 @@ Use anytime, not tied to a specific phase:
 | `/persist-knowledge` | Auto-save patterns and conventions to project docs |
 | `/agent-audit` | Audit agent configuration against latest best practices |
 | `/import-skill` | Bring external skills into the Arcana ecosystem |
+| `/skill-scout` | Scout skill providers for skills your project needs |
 
 ## Agents
 
@@ -64,7 +65,7 @@ Use anytime, not tied to a specific phase:
 
 ## Extend with import
 
-Arcana ships 13 skills. When you need something it doesn't have, import it:
+Arcana ships 14 skills. When you need something it doesn't have, import it:
 
 ```bash
 arcana import anthropics/skills claude-api     # from GitHub

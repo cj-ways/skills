@@ -69,9 +69,9 @@ describe("getTargetDirs", () => {
 });
 
 describe("getAvailableSkills", () => {
-  it("returns 13 skills", () => {
+  it("returns 14 skills", () => {
     const skills = getAvailableSkills();
-    expect(skills).toHaveLength(13);
+    expect(skills).toHaveLength(14);
   });
 
   it("includes idea-audit (renamed from new-project-idea)", () => {
@@ -86,7 +86,7 @@ describe("getAvailableSkills", () => {
       "agent-audit", "create-pr", "deep-review", "deploy-prep",
       "feature-audit", "find-unused", "generate-tests", "idea-audit",
       "import-skill", "persist-knowledge", "quick-review", "security-check",
-      "v0-design",
+      "skill-scout", "v0-design",
     ];
     for (const s of expected) {
       expect(skills).toContain(s);
