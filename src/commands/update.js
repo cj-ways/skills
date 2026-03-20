@@ -39,8 +39,12 @@ export async function runUpdate() {
     console.log(chalk.dim(`  ${loc.label}:`));
     const results = copySkills(installed, loc.skills);
     for (const r of results) {
-      console.log(chalk.green(`    ✓ ${r.name} updated`));
-      updated++;
+      if (r.status === "installed") {
+        console.log(chalk.green(`    ✓ ${r.name} updated`));
+        updated++;
+      } else if (r.status === "conflict") {
+        console.log(chalk.yellow(`    ⚠ ${r.name} skipped — custom skill detected (not Arcana-managed)`));
+      }
     }
 
     // Update agents
@@ -51,8 +55,12 @@ export async function runUpdate() {
       if (installedAgents.length > 0) {
         const agentResults = copyAgents(installedAgents, loc.agents);
         for (const r of agentResults) {
-          console.log(chalk.green(`    ✓ ${r.name} (agent) updated`));
-          updated++;
+          if (r.status === "installed") {
+            console.log(chalk.green(`    ✓ ${r.name} (agent) updated`));
+            updated++;
+          } else if (r.status === "conflict") {
+            console.log(chalk.yellow(`    ⚠ ${r.name} (agent) skipped — custom agent detected`));
+          }
         }
       }
     }

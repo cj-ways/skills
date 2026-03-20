@@ -178,9 +178,13 @@ export async function runInit() {
 
   // Copy skills to primary target
   const skillResults = copySkills(selectedSkills, dirs.skills);
+  const conflicts = [];
   for (const r of skillResults) {
     if (r.status === "installed") {
       console.log(chalk.green(`  ✓ ${r.name}`));
+    } else if (r.status === "conflict") {
+      console.log(chalk.yellow(`  ⚠ ${r.name} — name conflict (you have a custom skill with this name)`));
+      conflicts.push({ name: r.name, type: "skill" });
     } else {
       console.log(chalk.red(`  ✗ ${r.name} — ${r.status}`));
     }
@@ -192,10 +196,23 @@ export async function runInit() {
     for (const r of agentResults) {
       if (r.status === "installed") {
         console.log(chalk.green(`  ✓ ${r.name} (agent)`));
+      } else if (r.status === "conflict") {
+        console.log(chalk.yellow(`  ⚠ ${r.name} — name conflict (you have a custom agent with this name)`));
+        conflicts.push({ name: r.name, type: "agent" });
       } else {
         console.log(chalk.red(`  ✗ ${r.name} — ${r.status}`));
       }
     }
+  }
+
+  // Handle conflicts
+  if (conflicts.length > 0) {
+    console.log(chalk.yellow(`\n⚠ ${conflicts.length} name conflict(s) detected:`));
+    for (const c of conflicts) {
+      console.log(chalk.yellow(`  ${c.name} (${c.type}) — your custom ${c.type} has the same name as an Arcana ${c.type}`));
+    }
+    console.log(chalk.dim(`\n  Arcana skipped these to preserve your custom ${conflicts.length === 1 ? 'file' : 'files'}.`));
+    console.log(chalk.dim(`  To use Arcana's version: rename your custom ${conflicts.length === 1 ? 'file' : 'files'}, then run \`arcana add ${conflicts.map(c => c.name).join(' ')}\``));
   }
 
   // Multi-agent: mirror to agent-specific dirs

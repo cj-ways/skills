@@ -51,6 +51,9 @@ export async function runAdd(skills, opts) {
     for (const r of results) {
       if (r.status === "installed") {
         console.log(chalk.green(`  ✓ ${r.name}`));
+      } else if (r.status === "conflict") {
+        console.log(chalk.yellow(`  ⚠ ${r.name} — skipped (you have a custom skill with this name)`));
+        console.log(chalk.dim(`    Rename your skill to use Arcana's version, or use \`arcana use ${r.name}\` to view it.`));
       } else {
         console.log(chalk.red(`  ✗ ${r.name} — ${r.status}`));
       }
