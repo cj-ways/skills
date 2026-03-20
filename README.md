@@ -87,6 +87,7 @@ arcana list                     # Show installed vs available
 arcana sync                     # Multi-agent: sync canonical to mirrors
 arcana update                   # Update installed skills to latest
 arcana use <skill>              # Print skill to stdout (no install)
+arcana import <source>          # Import skill from GitHub, URL, or local
 arcana doctor                   # Check installation health
 arcana info <skill>             # Show skill metadata
 ```
