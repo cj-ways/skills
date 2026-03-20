@@ -1,8 +1,9 @@
 import chalk from "chalk";
+import { createHash } from "crypto";
 import { existsSync, readdirSync, readFileSync, statSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
-import { getAvailableSkills, getAvailableAgents } from "../utils/paths.js";
+import { getAvailableSkills, getAvailableAgents, getPackageSkillsDir, getPackageAgentsDir } from "../utils/paths.js";
 
 export async function runDoctor() {
   const cwd = process.cwd();
@@ -201,7 +202,76 @@ export async function runDoctor() {
     console.log();
   }
 
-  // 5. Summary
+  // 5. Integrity check — compare installed skills against package source
+  if (foundLocations.length > 0) {
+    console.log(chalk.dim("  Integrity:\n"));
+
+    const sourceSkillsDir = getPackageSkillsDir();
+    const sourceAgentsDir = getPackageAgentsDir();
+    let modified = 0;
+    let verified = 0;
+
+    function hash(content) {
+      // Strip the arcana marker before hashing so we compare actual content
+      return createHash("sha256")
+        .update(content.replace(/<!-- arcana-managed -->\n?/g, ""))
+        .digest("hex")
+        .slice(0, 12);
+    }
+
+    for (const loc of foundLocations) {
+      for (const skill of allSkills) {
+        const sourceFile = join(sourceSkillsDir, skill, "SKILL.md");
+        const installedFile = join(loc.dir, skill, "SKILL.md");
+
+        if (!existsSync(sourceFile) || !existsSync(installedFile)) continue;
+
+        const sourceHash = hash(readFileSync(sourceFile, "utf-8"));
+        const installedHash = hash(readFileSync(installedFile, "utf-8"));
+
+        if (sourceHash !== installedHash) {
+          console.log(chalk.yellow(`    WARN  ${skill} modified locally in ${loc.label}`));
+          warns++;
+          modified++;
+        } else {
+          verified++;
+        }
+      }
+    }
+
+    for (const loc of agentLocations) {
+      if (!existsSync(loc.dir)) continue;
+      for (const agent of allAgents) {
+        const sourceFile = join(sourceAgentsDir, `${agent}.md`);
+        const installedFile = join(loc.dir, `${agent}.md`);
+
+        if (!existsSync(sourceFile) || !existsSync(installedFile)) continue;
+
+        const sourceHash = hash(readFileSync(sourceFile, "utf-8"));
+        const installedHash = hash(readFileSync(installedFile, "utf-8"));
+
+        if (sourceHash !== installedHash) {
+          console.log(chalk.yellow(`    WARN  ${agent} agent modified locally in ${loc.label}`));
+          warns++;
+          modified++;
+        } else {
+          verified++;
+        }
+      }
+    }
+
+    if (modified === 0 && verified > 0) {
+      console.log(chalk.green(`    PASS  ${verified} file(s) match package source`));
+      passes++;
+    } else if (modified > 0) {
+      console.log(chalk.dim(`\n    ${verified} file(s) match, ${modified} modified locally`));
+      console.log(chalk.dim(`    Run \`arcana update\` to restore original versions`));
+    }
+
+    console.log();
+  }
+
+  // 6. Summary
   console.log(chalk.bold("  Summary:\n"));
   console.log(chalk.green(`    ${passes} PASS`) + chalk.yellow(`  ${warns} WARN`) + chalk.red(`  ${fails} FAIL`));
 
