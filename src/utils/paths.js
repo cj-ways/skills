@@ -1,4 +1,4 @@
-import { join } from "path";
+import { join, resolve } from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { homedir } from "os";
@@ -6,6 +6,14 @@ import { readdirSync, existsSync, statSync } from "fs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = join(__dirname, "..", "..");
+
+// Cached results — these never change during a single CLI invocation
+let _cachedSkills = null;
+let _cachedAgents = null;
+
+export function getPackageRoot() {
+  return PACKAGE_ROOT;
+}
 
 export function getPackageSkillsDir() {
   return join(PACKAGE_ROOT, "skills");
@@ -46,21 +54,46 @@ export function getTargetDirs(agent, scope) {
   }
 }
 
+/**
+ * Get all install locations for skills and agents.
+ * Used by list, remove, doctor, update to avoid duplicating path arrays.
+ */
+export function getAllInstallLocations() {
+  const cwd = process.cwd();
+  const home = homedir();
+  return {
+    skills: [
+      { label: ".claude/skills (project)", dir: join(cwd, ".claude", "skills"), level: "project" },
+      { label: ".agents/skills (project)", dir: join(cwd, ".agents", "skills"), level: "project" },
+      { label: "~/.claude/skills (user)", dir: join(home, ".claude", "skills"), level: "user" },
+      { label: "~/.agents/skills (user)", dir: join(home, ".agents", "skills"), level: "user" },
+    ],
+    agents: [
+      { label: ".claude/agents (project)", dir: join(cwd, ".claude", "agents"), level: "project" },
+      { label: "~/.claude/agents (user)", dir: join(home, ".claude", "agents"), level: "user" },
+    ],
+  };
+}
+
 export function getAvailableSkills() {
+  if (_cachedSkills) return _cachedSkills;
   const skillsDir = join(PACKAGE_ROOT, "skills");
   if (!existsSync(skillsDir)) return [];
-  return readdirSync(skillsDir).filter((name) => {
+  _cachedSkills = readdirSync(skillsDir).filter((name) => {
     const dir = join(skillsDir, name);
     return (
       statSync(dir).isDirectory() && existsSync(join(dir, "SKILL.md"))
     );
   });
+  return _cachedSkills;
 }
 
 export function getAvailableAgents() {
+  if (_cachedAgents) return _cachedAgents;
   const agentsDir = join(PACKAGE_ROOT, "agents");
   if (!existsSync(agentsDir)) return [];
-  return readdirSync(agentsDir)
+  _cachedAgents = readdirSync(agentsDir)
     .filter((name) => name.endsWith(".md") && statSync(join(agentsDir, name)).isFile())
     .map((name) => name.replace(/\.md$/, ""));
+  return _cachedAgents;
 }

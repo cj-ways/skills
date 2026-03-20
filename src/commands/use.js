@@ -1,18 +1,21 @@
 import { readFileSync, existsSync } from "fs";
-import { join } from "path";
+import { join, resolve } from "path";
 import { getPackageSkillsDir, getPackageAgentsDir, getAvailableSkills, getAvailableAgents } from "../utils/paths.js";
 
 export async function runUse(skill) {
+  const skillsDir = getPackageSkillsDir();
+  const agentsDir = getPackageAgentsDir();
+
   // Try as skill first
-  const skillPath = join(getPackageSkillsDir(), skill, "SKILL.md");
-  if (existsSync(skillPath)) {
+  const skillPath = resolve(join(skillsDir, skill, "SKILL.md"));
+  if (skillPath.startsWith(skillsDir) && existsSync(skillPath)) {
     process.stdout.write(readFileSync(skillPath, "utf-8") + '\n');
     return;
   }
 
   // Try as agent
-  const agentPath = join(getPackageAgentsDir(), `${skill}.md`);
-  if (existsSync(agentPath)) {
+  const agentPath = resolve(join(agentsDir, `${skill}.md`));
+  if (agentPath.startsWith(agentsDir) && existsSync(agentPath)) {
     process.stdout.write(readFileSync(agentPath, "utf-8") + '\n');
     return;
   }

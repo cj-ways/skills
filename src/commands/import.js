@@ -1,6 +1,6 @@
 import chalk from "chalk";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
-import { join, basename } from "path";
+import { join, basename, resolve } from "path";
 import { getTargetDirs, getAvailableSkills } from "../utils/paths.js";
 import { isInsideProject } from "../utils/detect.js";
 import { parseFrontmatter } from "../utils/frontmatter.js";
@@ -56,6 +56,8 @@ function resolveSource(source, skillName) {
 /**
  * Fetch content from a URL using native fetch().
  */
+const MAX_FETCH_SIZE = 512 * 1024; // 512KB
+
 async function fetchUrl(url) {
   try {
     const response = await fetch(url, {
@@ -63,7 +65,16 @@ async function fetchUrl(url) {
       signal: AbortSignal.timeout(15000),
     });
     if (!response.ok) return null;
-    return await response.text();
+
+    // Size limit: reject responses over 512KB
+    const contentLength = response.headers.get("content-length");
+    if (contentLength && parseInt(contentLength) > MAX_FETCH_SIZE) {
+      return null;
+    }
+
+    const text = await response.text();
+    if (text.length > MAX_FETCH_SIZE) return null;
+    return text;
   } catch {
     return null;
   }
@@ -158,7 +169,7 @@ export async function runImport(source, opts) {
   // --- Fetch based on source type ---
 
   if (resolved.type === "local") {
-    const localPath = resolved.path;
+    const localPath = resolve(resolved.path);
     // Try as directory with SKILL.md
     const skillMdPath = existsSync(join(localPath, "SKILL.md")) ? join(localPath, "SKILL.md") : localPath;
     if (!existsSync(skillMdPath)) {

@@ -2,6 +2,7 @@ import fsExtra from "fs-extra";
 const { copySync, ensureDirSync, existsSync, readFileSync, moveSync } = fsExtra;
 import { join } from "path";
 import { getPackageSkillsDir, getPackageAgentsDir, getAvailableSkills, getAvailableAgents } from "./paths.js";
+import { parseFrontmatter } from "./frontmatter.js";
 
 const ARCANA_MARKER = "<!-- arcana-managed -->";
 
@@ -18,16 +19,11 @@ function isArcanaManaged(filePath) {
 
     // Legacy detection: pre-1.4.0 Arcana installs have no marker.
     // Check if the frontmatter `name:` matches a known Arcana skill/agent.
-    const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
-    if (fmMatch) {
-      const frontmatter = fmMatch[1];
-      const nameMatch = frontmatter.match(/^name:\s*['"]?([^'"\n]+)/m);
-      if (nameMatch) {
-        const name = nameMatch[1].trim().replace(/['"]$/g, "");
-        const allSkills = getAvailableSkills();
-        const allAgents = getAvailableAgents();
-        if (allSkills.includes(name) || allAgents.includes(name)) return true;
-      }
+    const fm = parseFrontmatter(content);
+    if (fm.name) {
+      const allSkills = getAvailableSkills();
+      const allAgents = getAvailableAgents();
+      if (allSkills.includes(fm.name) || allAgents.includes(fm.name)) return true;
     }
 
     return false;
@@ -157,6 +153,7 @@ export function renameExistingAgent(agentsDir, oldName, newName) {
   moveSync(oldPath, newPath);
 
   // Update name in frontmatter
+  if (!existsSync(newPath)) return true;
   let content = readFileSync(newPath, "utf-8");
   const fmMatch = content.match(/^(---\n[\s\S]*?name:\s*)['"]?[^'"\n]+/m);
   if (fmMatch) {

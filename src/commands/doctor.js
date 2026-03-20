@@ -2,12 +2,10 @@ import chalk from "chalk";
 import { createHash } from "crypto";
 import { existsSync, readdirSync, readFileSync, statSync } from "fs";
 import { join } from "path";
-import { homedir } from "os";
-import { getAvailableSkills, getAvailableAgents, getPackageSkillsDir, getPackageAgentsDir } from "../utils/paths.js";
+import { getAvailableSkills, getAvailableAgents, getPackageSkillsDir, getPackageAgentsDir, getAllInstallLocations } from "../utils/paths.js";
 
 export async function runDoctor() {
   const cwd = process.cwd();
-  const home = homedir();
   const allSkills = getAvailableSkills();
   const allAgents = getAvailableAgents();
 
@@ -17,13 +15,8 @@ export async function runDoctor() {
 
   console.log(chalk.bold("\n✦ Arcana Doctor\n"));
 
-  // Define all locations to check
-  const skillLocations = [
-    { label: ".claude/skills/ (project)", dir: join(cwd, ".claude", "skills"), level: "project" },
-    { label: ".agents/skills/ (project)", dir: join(cwd, ".agents", "skills"), level: "project" },
-    { label: "~/.claude/skills/ (user)", dir: join(home, ".claude", "skills"), level: "user" },
-    { label: "~/.agents/skills/ (user)", dir: join(home, ".agents", "skills"), level: "user" },
-  ];
+  // Use centralized locations
+  const { skills: skillLocations, agents: agentLocations } = getAllInstallLocations();
 
   const foundLocations = [];
 
@@ -83,10 +76,6 @@ export async function runDoctor() {
   }
 
   // 2. Check agent locations
-  const agentLocations = [
-    { label: ".claude/agents/ (project)", dir: join(cwd, ".claude", "agents") },
-    { label: "~/.claude/agents/ (user)", dir: join(home, ".claude", "agents") },
-  ];
 
   console.log(chalk.dim("  Agent Locations:\n"));
 

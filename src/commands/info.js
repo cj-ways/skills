@@ -1,6 +1,6 @@
 import chalk from "chalk";
 import { existsSync, readFileSync, statSync } from "fs";
-import { join } from "path";
+import { join, resolve } from "path";
 import {
   getPackageSkillsDir,
   getPackageAgentsDir,
@@ -10,18 +10,21 @@ import {
 import { parseFrontmatter } from "../utils/frontmatter.js";
 
 export async function runInfo(skill) {
-  // Try as skill first
-  const skillPath = join(getPackageSkillsDir(), skill, "SKILL.md");
+  const skillsDir = getPackageSkillsDir();
+  const agentsDir = getPackageAgentsDir();
+
+  // Try as skill first (with path traversal guard)
+  const skillPath = resolve(join(skillsDir, skill, "SKILL.md"));
   // Try as agent
-  const agentPath = join(getPackageAgentsDir(), `${skill}.md`);
+  const agentPath = resolve(join(agentsDir, `${skill}.md`));
 
   let filePath = null;
   let type = null;
 
-  if (existsSync(skillPath)) {
+  if (skillPath.startsWith(skillsDir) && existsSync(skillPath)) {
     filePath = skillPath;
     type = "skill";
-  } else if (existsSync(agentPath)) {
+  } else if (agentPath.startsWith(agentsDir) && existsSync(agentPath)) {
     filePath = agentPath;
     type = "agent";
   }

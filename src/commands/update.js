@@ -1,14 +1,13 @@
 import chalk from "chalk";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
-import { homedir } from "os";
 import fsExtra from "fs-extra";
 const { removeSync } = fsExtra;
 import {
   getAvailableSkills,
   getAvailableAgents,
   getPackageSkillsDir,
-  getPackageAgentsDir,
+  getAllInstallLocations,
 } from "../utils/paths.js";
 import { copySkills, copyAgents } from "../utils/copy.js";
 import { runSync } from "./sync.js";
@@ -59,14 +58,13 @@ function applyMigrations(locations, migrations) {
 
 export async function runUpdate() {
   const cwd = process.cwd();
-  const home = homedir();
+  const { skills: skillLocs, agents: agentLocs } = getAllInstallLocations();
 
-  const locations = [
-    { label: "project (.claude)", skills: join(cwd, ".claude", "skills"), agents: join(cwd, ".claude", "agents") },
-    { label: "project (.agents)", skills: join(cwd, ".agents", "skills"), agents: null },
-    { label: "user", skills: join(home, ".claude", "skills"), agents: join(home, ".claude", "agents") },
-    { label: "user (.agents)", skills: join(home, ".agents", "skills"), agents: null },
-  ];
+  // Build locations with paired skills + agents dirs
+  const locations = skillLocs.map((sl) => {
+    const matchingAgent = agentLocs.find((al) => al.level === sl.level);
+    return { label: sl.label, skills: sl.dir, agents: matchingAgent ? matchingAgent.dir : null };
+  });
 
   const allSkills = getAvailableSkills();
   const allAgents = getAvailableAgents();

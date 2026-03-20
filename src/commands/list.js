@@ -1,26 +1,12 @@
 import chalk from "chalk";
 import { existsSync } from "fs";
 import { join } from "path";
-import { homedir } from "os";
-import { getAvailableSkills, getAvailableAgents } from "../utils/paths.js";
+import { getAvailableSkills, getAvailableAgents, getAllInstallLocations } from "../utils/paths.js";
 
 export async function runList() {
   const allSkills = getAvailableSkills();
   const allAgents = getAvailableAgents();
-  const cwd = process.cwd();
-  const home = homedir();
-
-  const locations = [
-    { label: ".claude/skills (project)", dir: join(cwd, ".claude", "skills") },
-    { label: ".agents/skills (project)", dir: join(cwd, ".agents", "skills") },
-    { label: "~/.claude/skills (user)", dir: join(home, ".claude", "skills") },
-    { label: "~/.agents/skills (user)", dir: join(home, ".agents", "skills") },
-  ];
-
-  const agentLocations = [
-    { label: ".claude/agents (project)", dir: join(cwd, ".claude", "agents") },
-    { label: "~/.claude/agents (user)", dir: join(home, ".claude", "agents") },
-  ];
+  const { skills: locations, agents: agentLocations } = getAllInstallLocations();
 
   console.log(chalk.bold("\n✦ Arcana Skills\n"));
 

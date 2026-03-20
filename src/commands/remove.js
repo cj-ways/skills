@@ -2,8 +2,7 @@ import chalk from "chalk";
 import fsExtra from "fs-extra";
 const { removeSync, existsSync } = fsExtra;
 import { join } from "path";
-import { homedir } from "os";
-import { getAvailableSkills, getAvailableAgents } from "../utils/paths.js";
+import { getAvailableSkills, getAvailableAgents, getAllInstallLocations } from "../utils/paths.js";
 
 export async function runRemove(skills) {
   if (!skills || skills.length === 0) {
@@ -13,19 +12,9 @@ export async function runRemove(skills) {
 
   const allSkills = getAvailableSkills();
   const allAgents = getAvailableAgents();
-  const cwd = process.cwd();
-
-  // Search in all possible locations (project + user level)
-  const searchDirs = [
-    join(cwd, ".claude", "skills"),
-    join(cwd, ".agents", "skills"),
-    join(homedir(), ".claude", "skills"),
-    join(homedir(), ".agents", "skills"),
-  ];
-  const agentDirs = [
-    join(cwd, ".claude", "agents"),
-    join(homedir(), ".claude", "agents"),
-  ];
+  const { skills: skillLocs, agents: agentLocs } = getAllInstallLocations();
+  const searchDirs = skillLocs.map((l) => l.dir);
+  const agentDirs = agentLocs.map((l) => l.dir);
 
   let anyRemoved = false;
 

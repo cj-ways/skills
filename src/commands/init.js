@@ -1,6 +1,6 @@
 import inquirer from "inquirer";
 import chalk from "chalk";
-import { existsSync, readdirSync } from "fs";
+import { existsSync, readdirSync, readFileSync } from "fs";
 import { join } from "path";
 import { isInsideProject, suggestAgent } from "../utils/detect.js";
 import {
@@ -41,10 +41,14 @@ function copyRules(targetDir) {
     const src = join(rulesDir, file);
     const dest = join(targetDir, file);
 
-    // Conflict detection: skip if file exists and is NOT an Arcana rule
-    if (existsSync(dest) && !arcanaRuleNames.includes(file)) {
-      results.push({ name: file, status: "conflict" });
-      continue;
+    // Conflict detection: if file exists at destination, check if it's ours
+    if (existsSync(dest)) {
+      const sourceContent = readFileSync(src, "utf-8");
+      const destContent = readFileSync(dest, "utf-8");
+      if (sourceContent !== destContent && !file.startsWith("arcana-")) {
+        results.push({ name: file, status: "conflict" });
+        continue;
+      }
     }
 
     fsCopySync(src, dest, { overwrite: true });
@@ -305,11 +309,13 @@ export async function runInit() {
   }
 
   // Copy agents
+  let agentInstalled = 0;
   if (dirs.agents && selectedAgents.length > 0) {
     const agentResults = copyAgents(selectedAgents, dirs.agents);
     for (const r of agentResults) {
       if (r.status === "installed") {
         console.log(chalk.green(`  ✓ ${r.name} (agent)`));
+        agentInstalled++;
       } else if (r.status === "conflict") {
         console.log(chalk.yellow(`  ⚠ ${r.name} — name conflict (agent)`));
         conflicts.push({ name: r.name, type: "agent" });
@@ -381,7 +387,7 @@ export async function runInit() {
 
   // Summary
   const installed = skillResults.filter((r) => r.status === "installed").length + conflictResolved;
-  const agentCount = dirs.agents ? selectedAgents.length : 0;
+  const agentCount = agentInstalled;
 
   const rulesSuffix = rulesCount > 0 ? ` + ${rulesCount} rules` : "";
   console.log(

@@ -39,7 +39,7 @@ export async function runSync(opts = {}) {
     console.log(chalk.green(`  ✓ ${rel} ← .agents/skills/`));
   }
 
-  // --clean: remove stale skills from mirrors that don't exist in canonical
+  // --clean: remove stale Arcana-managed skills from mirrors that don't exist in canonical
   if (opts.clean) {
     console.log(chalk.dim("\n  Cleaning stale skills...\n"));
     const canonicalSkills = readdirSync(canonical).filter(name =>
@@ -53,6 +53,12 @@ export async function runSync(opts = {}) {
       for (const entry of mirrorEntries) {
         if (!canonicalSkills.includes(entry)) {
           const stale = join(target, entry);
+          // Only remove Arcana-managed entries — preserve user/imported skills
+          const skillMd = join(stale, "SKILL.md");
+          if (existsSync(skillMd)) {
+            const content = readFileSync(skillMd, "utf-8");
+            if (!content.includes("<!-- arcana-managed -->")) continue;
+          }
           removeSync(stale);
           const rel = relative(cwd, stale);
           console.log(chalk.yellow(`  ✗ Removed stale: ${rel}`));

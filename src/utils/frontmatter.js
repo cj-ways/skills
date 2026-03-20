@@ -6,7 +6,7 @@ export function parseFrontmatter(content) {
   const match = content.match(/^---\n([\s\S]*?)\n---/);
   if (!match) return {};
 
-  const fm = {};
+  const fm = Object.create(null);
   for (const line of match[1].split("\n")) {
     const colonIndex = line.indexOf(":");
     if (colonIndex === -1) continue;
