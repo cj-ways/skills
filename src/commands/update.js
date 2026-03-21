@@ -1,8 +1,6 @@
 import chalk from "chalk";
-import { existsSync, readFileSync } from "fs";
+import { existsSync } from "fs";
 import { join } from "path";
-import fsExtra from "fs-extra";
-const { removeSync } = fsExtra;
 import {
   getAvailableSkills,
   getAvailableAgents,
@@ -10,51 +8,8 @@ import {
   getAllInstallLocations,
 } from "../utils/paths.js";
 import { copySkills, copyAgents } from "../utils/copy.js";
+import { loadMigrations, applyMigrations } from "../utils/migrations.js";
 import { runSync } from "./sync.js";
-
-function loadMigrations() {
-  const migrationsPath = join(getPackageSkillsDir(), "..", "migrations.json");
-  try {
-    if (!existsSync(migrationsPath)) return [];
-    const data = JSON.parse(readFileSync(migrationsPath, "utf-8"));
-    return data.migrations || [];
-  } catch {
-    return [];
-  }
-}
-
-function applyMigrations(locations, migrations) {
-  let applied = 0;
-
-  for (const migration of migrations) {
-    if (migration.type === "rename") {
-      for (const loc of locations) {
-        if (!existsSync(loc.skills)) continue;
-        const oldDir = join(loc.skills, migration.from);
-        const newDir = join(loc.skills, migration.to);
-
-        if (existsSync(join(oldDir, "SKILL.md")) && !existsSync(newDir)) {
-          removeSync(oldDir);
-          console.log(chalk.dim(`    ↳ ${migration.from} → ${migration.to} (renamed)`));
-          applied++;
-        }
-      }
-    } else if (migration.type === "remove") {
-      for (const loc of locations) {
-        if (!existsSync(loc.skills)) continue;
-        const oldDir = join(loc.skills, migration.from);
-
-        if (existsSync(oldDir)) {
-          removeSync(oldDir);
-          console.log(chalk.dim(`    ↳ ${migration.from} removed (${migration.reason || "deprecated"})`));
-          applied++;
-        }
-      }
-    }
-  }
-
-  return applied;
-}
 
 export async function runUpdate() {
   const cwd = process.cwd();
@@ -73,7 +28,8 @@ export async function runUpdate() {
   console.log(chalk.bold("\n✦ Arcana Update\n"));
 
   // Apply migrations before updating
-  const migrations = loadMigrations();
+  const migrationsPath = join(getPackageSkillsDir(), "..", "migrations.json");
+  const migrations = loadMigrations(migrationsPath);
   if (migrations.length > 0) {
     const migrated = applyMigrations(locations, migrations);
     if (migrated > 0) {

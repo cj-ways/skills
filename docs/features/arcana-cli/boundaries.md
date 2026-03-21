@@ -28,7 +28,7 @@ No usage data, crash reports, or analytics.
 
 ## No Auto-Generated Skills
 
-All 13 skills are manually authored.
+All 14 skills are manually authored.
 
 **Why:** SkillsBench: self-generated skills = -1.3pp. Hand-authored = +16.2pp.
 

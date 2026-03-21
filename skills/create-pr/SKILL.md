@@ -4,6 +4,7 @@ description: 'Creates a pull request or merge request with auto-generated title,
 argument-hint: '[target-branch]'
 allowed-tools: Bash, Read, Grep, Glob
 effort: low
+disable-model-invocation: true
 ---
 
 # /create-pr — Create Pull/Merge Request with Change Summary
@@ -22,6 +23,14 @@ Creates a pull request (GitHub) or merge request (GitLab) from the current branc
 - `target-branch`: Branch to merge into. If omitted, auto-detected (see Step 1).
 
 If `$ARGUMENTS` is provided, treat it as the target branch.
+
+## Gotchas
+
+1. **Targeting the wrong base branch.** Not all projects use `main`. Check `git symbolic-ref refs/remotes/origin/HEAD` first — many projects use `develop`, `staging`, or custom branch names. Do not assume `main`.
+2. **Pushing to a protected branch.** If the current branch is `main` or `master`, do NOT push or create a PR from it. Warn the user they need to be on a feature branch.
+3. **Leaking sensitive info in auto-generated descriptions.** Commit messages may contain internal ticket IDs, customer names, or debug notes. Review the generated description before submitting — strip anything that shouldn't be public.
+4. **Creating a duplicate PR.** Always check `gh pr list --head <branch>` (or GitLab equivalent) before creating. If a PR already exists for this branch, inform the user instead of creating another.
+5. **Failing silently when no remote is configured.** If `git remote -v` returns empty, abort with a clear message instead of letting `git push` fail cryptically.
 
 ## Steps
 

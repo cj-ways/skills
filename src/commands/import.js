@@ -1,9 +1,11 @@
 import chalk from "chalk";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
-import { join, basename, resolve } from "path";
+import { join, basename, resolve, sep } from "path";
 import { getTargetDirs, getAvailableSkills } from "../utils/paths.js";
 import { isInsideProject } from "../utils/detect.js";
 import { parseFrontmatter } from "../utils/frontmatter.js";
+
+const GITHUB_SLUG = /^[a-zA-Z0-9._-]{1,100}$/;
 
 /**
  * Resolve a source argument to a fetchable URL or local path.
@@ -16,30 +18,35 @@ import { parseFrontmatter } from "../utils/frontmatter.js";
  *   https://.../*.md              → raw URL to a SKILL.md
  *   ./local-path                  → local directory or file
  */
-function resolveSource(source, skillName) {
+export function resolveSource(source, skillName) {
   // Local path
   if (source.startsWith("./") || source.startsWith("/") || source.startsWith("../")) {
     return { type: "local", path: source };
   }
 
-  // Raw .md URL
-  if (source.startsWith("http") && source.endsWith(".md")) {
+  // Raw .md URL — enforce HTTPS only
+  if (source.startsWith("https://") && source.endsWith(".md")) {
     return { type: "url", url: source };
   }
 
   // GitHub tree URL (e.g., https://github.com/owner/repo/tree/main/skills/name)
-  const treeMatch = source.match(/github\.com\/([^/]+)\/([^/]+)\/tree\/([^/]+)\/(.+)/);
+  // Strip query strings and fragments before matching
+  const cleanSource = source.replace(/[?#].*$/, "");
+  const treeMatch = cleanSource.match(/github\.com\/([^/]+)\/([^/]+)\/tree\/([^/]+)\/(.+)/);
   if (treeMatch) {
     const [, owner, repo, branch, path] = treeMatch;
+    if (!GITHUB_SLUG.test(owner) || !GITHUB_SLUG.test(repo)) return null;
+    if (path.includes("..")) return null;
     const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}/SKILL.md`;
     const name = basename(path);
     return { type: "github-skill", url: rawUrl, owner, repo, branch, name };
   }
 
   // GitHub repo URL (e.g., https://github.com/owner/repo)
-  const repoUrlMatch = source.match(/github\.com\/([^/]+)\/([^/]+)\/?$/);
+  const repoUrlMatch = cleanSource.match(/github\.com\/([^/]+)\/([^/]+)\/?$/);
   if (repoUrlMatch) {
     const [, owner, repo] = repoUrlMatch;
+    if (!GITHUB_SLUG.test(owner) || !GITHUB_SLUG.test(repo.replace(/\.git$/, ""))) return null;
     return { type: "github-repo", owner, repo: repo.replace(/\.git$/, ""), skillName };
   }
 
@@ -47,6 +54,7 @@ function resolveSource(source, skillName) {
   const shortMatch = source.match(/^([^/]+)\/([^/]+)$/);
   if (shortMatch) {
     const [, owner, repo] = shortMatch;
+    if (!GITHUB_SLUG.test(owner) || !GITHUB_SLUG.test(repo)) return null;
     return { type: "github-repo", owner, repo, skillName };
   }
 
@@ -128,7 +136,7 @@ async function fetchGitHubSkill(owner, repo, skillName) {
 /**
  * Validate basic frontmatter requirements.
  */
-function validateFrontmatter(fm) {
+export function validateFrontmatter(fm) {
   const issues = [];
 
   if (!fm.name) issues.push("Missing 'name' field");
@@ -258,6 +266,11 @@ export async function runImport(source, opts) {
   const name = fm.name || skillName || basename(source).replace(/\.md$/, "");
   const normalizedName = name.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
 
+  if (!normalizedName || normalizedName.length < 2) {
+    console.log(chalk.red("  Invalid skill name after normalization. Specify a name with: arcana import <source> <name>"));
+    process.exit(1);
+  }
+
   console.log(chalk.dim(`  Source: ${sourceLabel}`));
   console.log(chalk.dim(`  Name: ${normalizedName}`));
   console.log(chalk.dim(`  Lines: ${lines}`));
@@ -295,6 +308,12 @@ export async function runImport(source, opts) {
   const dirs = getTargetDirs(agent, scope);
   const targetDir = join(dirs.skills, normalizedName);
 
+  // Verify target is a direct child of skills dir
+  if (!targetDir.startsWith(dirs.skills + sep)) {
+    console.log(chalk.red("  Resolved target directory escapes skills root. Aborting."));
+    process.exit(1);
+  }
+
   if (existsSync(targetDir) && !opts.force) {
     console.log(chalk.yellow(`\n  ⚠ ${normalizedName} already exists at ${targetDir}`));
     console.log(chalk.dim("    Use --force to overwrite"));
@@ -306,8 +325,9 @@ export async function runImport(source, opts) {
   mkdirSync(targetDir, { recursive: true });
   const targetPath = join(targetDir, "SKILL.md");
 
-  // Add attribution comment
-  const attribution = `<!-- Imported by Arcana from: ${sourceLabel} -->\n`;
+  // Add attribution comment (escape --> to prevent comment injection)
+  const safeLabel = sourceLabel.replace(/-->/g, "--&gt;");
+  const attribution = `<!-- Imported by Arcana from: ${safeLabel} -->\n`;
   const finalContent = attribution + content;
 
   writeFileSync(targetPath, finalContent);

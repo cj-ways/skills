@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { join } from "path";
 import fsExtra from "fs-extra";
-import { copySkills, copyAgents, renameExistingSkill, mirrorSkills } from "../src/utils/copy.js";
+import { copySkills, copyAgents, renameExistingSkill, renameExistingAgent, mirrorSkills } from "../src/utils/copy.js";
 import { getPackageSkillsDir, getPackageAgentsDir } from "../src/utils/paths.js";
+import { parseFrontmatter } from "../src/utils/frontmatter.js";
 
 const TMP = join(import.meta.dirname, ".tmp-test");
 
@@ -175,6 +176,122 @@ describe("renameExistingSkill", () => {
   });
 });
 
+describe("copyAgents — conflict detection", () => {
+  it("detects conflict with non-arcana agent", () => {
+    const target = join(TMP, "agents");
+    fsExtra.ensureDirSync(target);
+    fsExtra.writeFileSync(join(target, "code-reviewer.md"), "---\nname: my-custom-reviewer\n---\n# Custom");
+
+    const results = copyAgents(["code-reviewer"], target);
+    expect(results[0].status).toBe("conflict");
+  });
+
+  it("overwrites conflict when force is true", () => {
+    const target = join(TMP, "agents");
+    fsExtra.ensureDirSync(target);
+    fsExtra.writeFileSync(join(target, "code-reviewer.md"), "---\nname: my-custom-reviewer\n---\n# Custom");
+
+    const results = copyAgents(["code-reviewer"], target, { force: true });
+    expect(results[0].status).toBe("installed");
+  });
+
+  it("marker is placed after frontmatter in agent files", () => {
+    const target = join(TMP, "agents");
+    copyAgents(["code-reviewer"], target);
+
+    const content = fsExtra.readFileSync(join(target, "code-reviewer.md"), "utf-8");
+    expect(content).toContain("<!-- arcana-managed -->");
+    // Frontmatter should still start at line 1
+    expect(content).toMatch(/^---\n/);
+  });
+});
+
+describe("legacy name-match detection (known limitation)", () => {
+  it("treats skill with matching arcana name but no marker as arcana-managed", () => {
+    const target = join(TMP, "skills");
+    const customDir = join(target, "find-unused");
+    fsExtra.ensureDirSync(customDir);
+    // Name matches an Arcana skill name — legacy detection fires
+    fsExtra.writeFileSync(join(customDir, "SKILL.md"), "---\nname: find-unused\n---\n# User custom content");
+
+    const results = copySkills(["find-unused"], target);
+    // Known behavior: treated as arcana-managed, gets overwritten
+    expect(results[0].status).toBe("installed");
+  });
+});
+
+describe("renameExistingAgent", () => {
+  it("renames agent file and updates frontmatter", () => {
+    const agentsDir = join(TMP, "agents");
+    fsExtra.ensureDirSync(agentsDir);
+    fsExtra.writeFileSync(join(agentsDir, "old-agent.md"), "---\nname: old-agent\ndescription: 'test'\n---\n# Old");
+
+    const result = renameExistingAgent(agentsDir, "old-agent", "new-agent");
+    expect(result).toBe(true);
+    expect(fsExtra.existsSync(join(agentsDir, "new-agent.md"))).toBe(true);
+    expect(fsExtra.existsSync(join(agentsDir, "old-agent.md"))).toBe(false);
+
+    const content = fsExtra.readFileSync(join(agentsDir, "new-agent.md"), "utf-8");
+    expect(content).toContain("name: new-agent");
+    expect(content).not.toContain("name: old-agent");
+  });
+
+  it("returns false if source does not exist", () => {
+    const agentsDir = join(TMP, "agents");
+    fsExtra.ensureDirSync(agentsDir);
+    const result = renameExistingAgent(agentsDir, "nonexistent", "new-name");
+    expect(result).toBe(false);
+  });
+
+  it("returns false if destination already exists", () => {
+    const agentsDir = join(TMP, "agents");
+    fsExtra.ensureDirSync(agentsDir);
+    fsExtra.writeFileSync(join(agentsDir, "old.md"), "---\nname: old\n---\n");
+    fsExtra.writeFileSync(join(agentsDir, "new.md"), "---\nname: new\n---\n");
+
+    const result = renameExistingAgent(agentsDir, "old", "new");
+    expect(result).toBe(false);
+  });
+});
+
+describe("rewriteFrontmatterName (via renameExistingSkill)", () => {
+  it("handles SKILL.md with no frontmatter — content unchanged", () => {
+    const skillsDir = join(TMP, "skills");
+    const skillDir = join(skillsDir, "old-skill");
+    fsExtra.ensureDirSync(skillDir);
+    fsExtra.writeFileSync(join(skillDir, "SKILL.md"), "# No frontmatter here");
+
+    renameExistingSkill(skillsDir, "old-skill", "new-skill");
+    const content = fsExtra.readFileSync(join(skillsDir, "new-skill", "SKILL.md"), "utf-8");
+    expect(content).toBe("# No frontmatter here");
+  });
+
+  it("handles frontmatter with name not being first field", () => {
+    const skillsDir = join(TMP, "skills");
+    const skillDir = join(skillsDir, "old-skill");
+    fsExtra.ensureDirSync(skillDir);
+    fsExtra.writeFileSync(join(skillDir, "SKILL.md"), "---\ndescription: 'test'\nname: old-skill\nallowed-tools: Read\n---\n# Body");
+
+    renameExistingSkill(skillsDir, "old-skill", "new-skill");
+    const content = fsExtra.readFileSync(join(skillsDir, "new-skill", "SKILL.md"), "utf-8");
+    expect(content).toContain("name: new-skill");
+    expect(content).toContain("description: 'test'");
+    expect(content).toContain("allowed-tools: Read");
+  });
+
+  it("handles frontmatter without a name field — content unchanged", () => {
+    const skillsDir = join(TMP, "skills");
+    const skillDir = join(skillsDir, "old-skill");
+    fsExtra.ensureDirSync(skillDir);
+    fsExtra.writeFileSync(join(skillDir, "SKILL.md"), "---\ndescription: 'no name'\n---\n# Body");
+
+    renameExistingSkill(skillsDir, "old-skill", "new-skill");
+    const content = fsExtra.readFileSync(join(skillsDir, "new-skill", "SKILL.md"), "utf-8");
+    expect(content).not.toContain("name:");
+    expect(content).toContain("description: 'no name'");
+  });
+});
+
 describe("mirrorSkills", () => {
   it("copies canonical to all mirror targets", () => {
     const canonical = join(TMP, "canonical");
@@ -188,5 +305,41 @@ describe("mirrorSkills", () => {
     expect(results).toHaveLength(2);
     expect(fsExtra.existsSync(join(mirror1, "test-skill", "SKILL.md"))).toBe(true);
     expect(fsExtra.existsSync(join(mirror2, "test-skill", "SKILL.md"))).toBe(true);
+  });
+
+  it("preserves file content in mirrors", () => {
+    const canonical = join(TMP, "canonical");
+    const mirror = join(TMP, "mirror");
+
+    fsExtra.ensureDirSync(join(canonical, "test-skill"));
+    fsExtra.writeFileSync(join(canonical, "test-skill", "SKILL.md"), "---\nname: test-skill\n---\n# Content here");
+
+    mirrorSkills(canonical, [mirror]);
+    const content = fsExtra.readFileSync(join(mirror, "test-skill", "SKILL.md"), "utf-8");
+    expect(content).toBe("---\nname: test-skill\n---\n# Content here");
+  });
+});
+
+describe("post-marker frontmatter integrity", () => {
+  it("installed skill frontmatter is still parseable after marker injection", () => {
+    const target = join(TMP, "skills");
+    copySkills(["find-unused"], target);
+
+    const content = fsExtra.readFileSync(join(target, "find-unused", "SKILL.md"), "utf-8");
+    const fm = parseFrontmatter(content);
+    expect(fm.name).toBe("find-unused");
+    expect(fm.description).toBeDefined();
+    expect(fm["allowed-tools"]).toBeDefined();
+  });
+
+  it("installed agent frontmatter is still parseable after marker injection", () => {
+    const target = join(TMP, "agents");
+    copyAgents(["code-reviewer"], target);
+
+    const content = fsExtra.readFileSync(join(target, "code-reviewer.md"), "utf-8");
+    const fm = parseFrontmatter(content);
+    expect(fm.name).toBe("code-reviewer");
+    // Frontmatter should start at line 1 (--- at position 0)
+    expect(content.startsWith("---\n")).toBe(true);
   });
 });

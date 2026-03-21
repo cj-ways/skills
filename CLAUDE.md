@@ -4,7 +4,7 @@
 
 Arcana (`@cj-ways/arcana`) is a curated agent skills CLI for Claude Code and Codex CLI. It ships 14 hand-authored skills, 2 agents, and 3 quality rules — all backed by SkillsBench data. Published on npm under `@cj-ways/arcana`. GitHub: `cj-ways/arcana`. MIT licensed.
 
-**Current version:** 1.7.0 (14 skills + 2 agents + 3 quality rules)
+**Current version:** 1.8.0 (14 skills + 2 agents + 3 quality rules)
 
 ## Your Role
 
@@ -50,8 +50,8 @@ You are the project owner, solution architect, lead developer, and release manag
 | skill-scout | Scout providers for useful skills | Fetches catalogs, cross-matches against codebase, recommends with evidence |
 
 ### Agents
-- `code-reviewer` — Single-pass reviewer with false-positive suppression (model: sonnet, tools: read-only)
-- `review-team` — Spawns 3 parallel specialist reviewers (model: sonnet, effort: high)
+- `code-reviewer` — Thin wrapper that loads `quick-review` skill. Triggers on conversational review requests (model: sonnet, tools: read-only)
+- `review-team` — Thin wrapper that loads `deep-review` skill. Triggers on deep review requests (model: sonnet, effort: high)
 
 ### Supported Agents
 - **Claude Code** — `.claude/skills/`, `.claude/agents/`, `.claude/rules/`
@@ -83,11 +83,12 @@ Cursor and Gemini support was removed in v1.6.0 to focus on quality over coverag
 ### File Structure
 ```
 bin/arcana.js              — CLI entry point
-src/commands/*.js          — 9 command implementations
+src/commands/*.js          — 10 command implementations
 src/utils/paths.js         — Path resolution, skill/agent discovery
 src/utils/detect.js        — Agent auto-detection (Claude, Codex)
 src/utils/copy.js          — File copying, conflict detection, markers
-skills/*/SKILL.md          — 13 skill definitions
+src/utils/frontmatter.js   — Shared YAML frontmatter parser
+skills/*/SKILL.md          — 14 skill definitions
 agents/*.md                — 2 agent definitions
 rules/*.md                 — 3 quality rules
 migrations.json            — Skill rename/removal migrations

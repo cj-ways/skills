@@ -6,7 +6,7 @@ import { getAvailableSkills, getAvailableAgents, getAllInstallLocations } from "
 
 export async function runRemove(skills) {
   if (!skills || skills.length === 0) {
-    console.log(chalk.yellow("Usage: arcana remove <skill-name> [skill-name...]"));
+    console.error(chalk.yellow("Usage: arcana remove <skill-name> [skill-name...]"));
     process.exit(1);
   }
 
@@ -46,7 +46,7 @@ export async function runRemove(skills) {
     }
 
     if (!removed) {
-      console.log(chalk.yellow(`  - ${name} not found in any location`));
+      console.error(chalk.yellow(`  - ${name} not found in any location`));
     }
 
     if (removed) anyRemoved = true;

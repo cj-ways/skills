@@ -4,6 +4,7 @@ description: 'Analyzes branch diff to generate deploy checklists — env vars, m
 argument-hint: '[source-branch] [target-branch]'
 allowed-tools: Bash, Read, Grep, Glob
 effort: medium
+disable-model-invocation: true
 ---
 
 # Deploy Prep

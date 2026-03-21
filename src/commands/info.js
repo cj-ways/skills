@@ -1,6 +1,6 @@
 import chalk from "chalk";
 import { existsSync, readFileSync, statSync } from "fs";
-import { join, resolve } from "path";
+import { join, resolve, sep } from "path";
 import {
   getPackageSkillsDir,
   getPackageAgentsDir,
@@ -21,10 +21,10 @@ export async function runInfo(skill) {
   let filePath = null;
   let type = null;
 
-  if (skillPath.startsWith(skillsDir) && existsSync(skillPath)) {
+  if (skillPath.startsWith(skillsDir + sep) && existsSync(skillPath)) {
     filePath = skillPath;
     type = "skill";
-  } else if (agentPath.startsWith(agentsDir) && existsSync(agentPath)) {
+  } else if (agentPath.startsWith(agentsDir + sep) && existsSync(agentPath)) {
     filePath = agentPath;
     type = "agent";
   }

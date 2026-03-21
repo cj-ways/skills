@@ -4,6 +4,7 @@ description: 'Finds unused exports, dead functions/classes, orphaned files, and 
 argument-hint: '[scope: all|exports|functions|files|deps]'
 allowed-tools: Read, Grep, Glob, Bash
 effort: low
+disable-model-invocation: true
 ---
 
 # Find Unused

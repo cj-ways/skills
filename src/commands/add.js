@@ -1,24 +1,11 @@
 import chalk from "chalk";
 import { getTargetDirs, getAvailableSkills, getAvailableAgents } from "../utils/paths.js";
 import { copySkills, copyAgents, mirrorSkills } from "../utils/copy.js";
-import { isInsideProject } from "../utils/detect.js";
-import { existsSync } from "fs";
-import { join } from "path";
-
-function detectAgent() {
-  const cwd = process.cwd();
-  if (existsSync(join(cwd, ".agents", "skills"))) return "multi";
-  if (existsSync(join(cwd, "AGENTS.md")) && !existsSync(join(cwd, "CLAUDE.md"))) return "codex";
-  return "claude";
-}
-
-function detectScope() {
-  return isInsideProject() ? "project" : "user";
-}
+import { isInsideProject, suggestAgent } from "../utils/detect.js";
 
 export async function runAdd(skills, opts) {
-  const agent = opts.agent || detectAgent();
-  const scope = opts.scope || detectScope();
+  const agent = opts.agent || suggestAgent();
+  const scope = opts.scope || (isInsideProject() ? "project" : "user");
   const dirs = getTargetDirs(agent, scope);
   const force = opts.force || false;
 
@@ -30,7 +17,7 @@ export async function runAdd(skills, opts) {
   if (opts.all) {
     toInstall = allSkills;
   } else if (toInstall.length === 0) {
-    console.log(chalk.yellow("Usage: arcana add <skill-name> [skill-name...] or arcana add --all"));
+    console.error(chalk.yellow("Usage: arcana add <skill-name> [skill-name...] or arcana add --all"));
     process.exit(1);
   }
 
@@ -43,7 +30,7 @@ export async function runAdd(skills, opts) {
     (s) => !allSkills.includes(s) && !allAgents.includes(s)
   );
   for (const u of unknown) {
-    console.log(chalk.yellow(`  ? Unknown skill: ${u}`));
+    console.error(chalk.yellow(`  ? Unknown skill: ${u}`));
   }
 
   if (skillNames.length === 0 && agentNames.length === 0) {

@@ -14,7 +14,7 @@ import fsExtra from "fs-extra";
 const { copySync: fsCopySync, ensureDirSync } = fsExtra;
 import { appendAgentsMdBlock } from "./sync.js";
 
-function hasArcanaSkills() {
+export function hasArcanaSkills() {
   const cwd = process.cwd();
   const dirs = [
     join(cwd, ".claude", "skills"),
@@ -31,7 +31,7 @@ function hasArcanaSkills() {
   return false;
 }
 
-function copyRules(targetDir) {
+export function copyRules(targetDir) {
   const rulesDir = getPackageRulesDir();
   if (!existsSync(rulesDir)) return [];
   const results = [];
@@ -101,6 +101,8 @@ async function resolveConflicts(conflicts, dirs) {
       }
     }
   } else if (resolution === "rename") {
+    const failedRenames = new Set();
+
     for (const c of conflicts) {
       const targetDir = c.type === "skill" ? dirs.skills : dirs.agents;
 
@@ -133,13 +135,14 @@ async function resolveConflicts(conflicts, dirs) {
       if (renamed) {
         console.log(chalk.dim(`  ↳ ${c.name} → ${newName.trim()}`));
       } else {
-        console.log(chalk.red(`  ✗ Failed to rename ${c.name}`));
+        console.log(chalk.red(`  ✗ Failed to rename ${c.name} — skipping Arcana install for this name`));
+        failedRenames.add(c.name);
       }
     }
 
-    // Now install Arcana versions in the freed-up names
-    const skillConflicts = conflicts.filter((c) => c.type === "skill").map((c) => c.name);
-    const agentConflicts = conflicts.filter((c) => c.type === "agent").map((c) => c.name);
+    // Now install Arcana versions in the freed-up names (skip failed renames)
+    const skillConflicts = conflicts.filter((c) => c.type === "skill" && !failedRenames.has(c.name)).map((c) => c.name);
+    const agentConflicts = conflicts.filter((c) => c.type === "agent" && !failedRenames.has(c.name)).map((c) => c.name);
 
     if (skillConflicts.length > 0) {
       const results = copySkills(skillConflicts, dirs.skills);

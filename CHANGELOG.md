@@ -1,5 +1,46 @@
 # Changelog
 
+## v1.8.0 (2026-03-21)
+
+### Fixed
+- **CRITICAL: rename migration deleted skills instead of moving** — `applyMigrations` used `removeSync` instead of `moveSync`, causing data loss on `arcana update` for users with renamed skills.
+- **`copyAgents` marker broke frontmatter** — marker was prepended before `---` instead of after, corrupting YAML parsing for agent files.
+- **`security-check` missing WebSearch in allowed-tools** — CVE lookup step mandated WebSearch but it was blocked by the frontmatter allowlist. Added `WebSearch, WebFetch`.
+- **SSRF via HTTP URLs in import** — `resolveSource` accepted `http://` URLs. Now enforces HTTPS only.
+- **Empty `normalizedName` wrote to skills root** — names like `.` or `---` normalized to empty string, writing files to wrong location. Added validation.
+- **Path traversal guard in `use`/`info` missing trailing separator** — `startsWith(dir)` changed to `startsWith(dir + sep)`.
+- **`sync --clean` deleted non-skill directories** — directories without `SKILL.md` in mirrors were silently removed. Now preserved.
+- **`init` rename failure unchecked** — failed renames proceeded to overwrite user files. Now tracked and skipped.
+- **`sync.js` error on stdout** — `console.log` changed to `console.error` for error messages.
+- **`add.js`/`remove.js` errors on stdout** — usage and error messages moved to stderr.
+- **Owner/repo URL manipulation** — added `GITHUB_SLUG` validation and `?#` fragment stripping.
+- **Attribution `-->` injection** — `sourceLabel` now escaped in HTML comments.
+- **Regex frontmatter rename fragile** — replaced with line-by-line `rewriteFrontmatterName()`.
+
+### Added
+- **Test suite expansion: 177 → 326 tests across 13 files** (was 7 files)
+  - `tests/commands.test.js` — 27 integration tests for all CLI commands with exit code verification
+  - `tests/detect.test.js` — 12 tests for agent detection logic
+  - `tests/agents-md.test.js` — 6 tests for AGENTS.md generation
+  - `tests/sync.test.js` — 8 tests for sync + `--clean` safety invariant
+  - `tests/import-unit.test.js` — 25 tests for `resolveSource` + `validateFrontmatter`
+  - `tests/version-sync.test.js` — 6 tests for version drift across package.json/plugin.json/marketplace.json
+- **Upgrade path test** — e2e test simulating v1.5→v1.8 migration (rename + update + verify)
+- **Exit code testing** — `run()` helper now returns `{output, status}`, error paths verified
+- **`@vitest/coverage-v8`** — coverage tooling configured in `vitest.config.js`
+- **macOS CI runner** — CI matrix now runs on `ubuntu-latest` + `macos-latest`
+- **`npm test` runs Vitest** — canonical test gate now includes unit tests, not just smoke
+
+### Changed
+- **Extracted `src/utils/migrations.js`** — `loadMigrations` and `applyMigrations` moved from `update.js` for testability
+- **Extracted `src/utils/agents-md.js`** — `appendAgentsMdBlock` moved from `sync.js` to utility layer
+- **`detect.js` accepts optional `cwd` parameter** — all 3 functions testable without `process.chdir`
+- **`import.js` exports pure functions** — `resolveSource` and `validateFrontmatter` exported for unit testing
+- **`init.js` exports helper functions** — `hasArcanaSkills` and `copyRules` exported for testability
+- **Skills test uses `parseFrontmatter`** — replaced ad-hoc regex with production parser
+- **Network tests gated** — `SKIP_NETWORK_TESTS` env var skips GitHub API tests
+- **Agent detection unified** — `add.js` now uses `suggestAgent()` from `detect.js` instead of duplicate logic
+
 ## v1.7.1 (2026-03-21)
 
 ### Fixed

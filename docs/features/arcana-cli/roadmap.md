@@ -80,8 +80,8 @@ Ensure all errors suggest a fix action.
 
 ## Dropped
 
-**Publish skills to external marketplaces** — Dropped 2026-03-20
-Arcana is a self-contained toolkit. `import-skill` is the bridge.
+**Publish skills to third-party marketplaces (skills.sh, SkillsMP)** — Dropped 2026-03-20
+Arcana is a self-contained toolkit. `import-skill` is the bridge. Claude Code's native plugin system (`.claude-plugin/marketplace.json`) remains supported as a distribution channel.
 
 **Enterprise features** — Dropped 2026-03-20
 Wrong stage.
@@ -93,13 +93,19 @@ Focus on Claude Code + Codex CLI first.
 
 ## Competitive Intelligence
 
-- **skills.sh (Vercel)**: 89K+ skills, 2.4M+ installs. Quiet week (no new features since Feb).
-- **Claude Code March 19**: Added `effort` frontmatter — Arcana already ships this on all 14 skills.
-- **shadcn/skills**: New official skills for shadcn/ui v4. Relevant to `v0-design`.
-- **SkillPort** (gotalab): New entrant using MCP server approach. Different angle from Arcana.
-- **Nobody competes on quality.** Market still in quantity phase.
+> Updated: 2026-03-21
+
+- **Ecosystem scale**: 350,000+ skills in 2 months. 85% of tested skills made output worse (40/47). Industry consensus: 20-30 curated skills max.
+- **Security crisis**: 13.4% of scanned skills have critical issues (Snyk). ClawHub incident: 1,184 malicious skills. Arcana's hand-authored, npm-provenance approach is a genuine differentiator.
+- **skills.sh (Vercel)**: 83K+ skills, dominant directory. Backed by Vercel/Stripe/Prisma. Distribution infrastructure, not content — complementary to Arcana.
+- **Name conflict**: `medy-gribkov/arcana` — 74 skills, 15 categories, visible on LobeHub. Same name, similar concept. The `@cj-ways/arcana` npm scope protects the package, but brand confusion is possible.
+- **Anthropic official skills** (`anthropics/skills`): Reference skills for creative/technical tasks. Could expand into workflow territory (code review, security). Monitor.
+- **Claude Code plugin marketplace**: Native distribution via `/plugin`. Arcana already participates via `.claude-plugin/marketplace.json`.
+- **OpenAI Codex catalog**: 35 curated skills, 13K GitHub stars. Small — leaves room for Arcana's workflow skills.
+- **Nobody competes on quality.** Market still in quantity phase. Arcana's SkillsBench data (7,308 trajectories) is unique.
 
 ## Audit History
 
 - 2026-03-20: Initial feature audit. 13 universal + 4 feature-specific perspectives. Full competitive landscape. Shipped v1.6.0 with all roadmap items.
 - 2026-03-21: Re-audit. 16 findings (9 fixed, 3 noted, 4 pass). Shipped v1.7.0 (skill-scout), v1.7.1 (version fix). Codebase in strong shape — remaining items are polish.
+- 2026-03-21: Deep self-audit. 12 fixes: agents rewritten as thin wrappers (skills: field), Gotchas added to create-pr + agent-audit, doc drift fixed (version, counts, dead links), competitive intel updated (350K ecosystem, name conflict, security crisis), code quality fixes (dead check, marker consistency), disable-model-invocation on 4 skills.

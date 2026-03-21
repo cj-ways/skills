@@ -3,13 +3,20 @@ name: agent-audit
 description: 'Audits Claude Code agent configuration against latest best practices. Works on any project. Manual via /agent-audit.'
 argument-hint: '[scope: full|hooks|permissions|claudeignore|claude-md|memory|skills|skill:<name>|agents|agent:<name>|rules]'
 disable-model-invocation: true
-allowed-tools: Read, Grep, Glob, WebSearch, WebFetch
+allowed-tools: Read, Grep, Glob, Agent, WebSearch, WebFetch
 effort: medium
 ---
 
 # Agent Configuration Audit
 
 Audit this project's Claude Code agent configuration against latest best practices.
+
+## Gotchas
+
+1. **Flagging intentional patterns as issues.** Read CLAUDE.md and `.claude/rules/` FIRST. What looks like a misconfiguration may be an intentional project convention documented there. Never report something as an issue if it's explained in the project's own docs.
+2. **Recommending fields that don't exist.** Claude Code's supported frontmatter fields change between versions. ALWAYS verify against the latest docs (Phase 1 research) before flagging a "missing" field — it may not be supported yet, or may have been deprecated.
+3. **Overwhelming output.** A full audit can produce 50+ findings. Prioritize ruthlessly — lead with HIGH severity, collapse LOW items into a summary table. Users stop reading after 10 findings.
+4. **Ignoring user-level config.** Project-level `.claude/` is only half the picture. Always check `~/.claude/settings.json`, `~/.claude/rules/`, and `~/.claude/skills/` for conflicts or overrides that affect behavior.
 
 ## Argument Parsing
 

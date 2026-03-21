@@ -70,11 +70,11 @@ export function copySkills(skillNames, targetSkillsDir, { force = false } = {}) 
     ensureDirSync(dest);
     copySync(src, dest, { overwrite: true });
 
-    // Add marker to installed SKILL.md
+    // Add marker to installed SKILL.md (read the already-copied file)
     const installedPath = join(dest, "SKILL.md");
     if (existsSync(installedPath)) {
-      const content = readFileSync(installedPath, "utf-8");
-      const marked = addMarker(content);
+      const sourceContent = readFileSync(join(src, "SKILL.md"), "utf-8");
+      const marked = addMarker(sourceContent);
       fsExtra.writeFileSync(installedPath, marked);
     }
 
@@ -110,14 +110,37 @@ export function copyAgents(agentNames, targetAgentsDir, { force = false } = {}) 
 
     // Add marker
     const content = readFileSync(dest, "utf-8");
-    if (!content.includes(ARCANA_MARKER)) {
-      fsExtra.writeFileSync(dest, ARCANA_MARKER + "\n" + content);
+    const marked = addMarker(content);
+    if (marked !== content) {
+      fsExtra.writeFileSync(dest, marked);
     }
 
     results.push({ name, status: "installed" });
   }
 
   return results;
+}
+
+/**
+ * Update the `name` field in YAML frontmatter using line-by-line rewrite.
+ * Avoids fragile regex replacement on raw text.
+ */
+function rewriteFrontmatterName(content, newName) {
+  const fmMatch = content.match(/^(---\n)([\s\S]*?\n)(---)/);
+  if (!fmMatch) return content;
+
+  const lines = fmMatch[2].split("\n");
+  let found = false;
+  for (let i = 0; i < lines.length; i++) {
+    const colonIdx = lines[i].indexOf(":");
+    if (colonIdx !== -1 && lines[i].slice(0, colonIdx).trim() === "name") {
+      lines[i] = `name: ${newName}`;
+      found = true;
+      break;
+    }
+  }
+  if (!found) return content;
+  return fmMatch[1] + lines.join("\n") + fmMatch[3] + content.slice(fmMatch[0].length);
 }
 
 export function renameExistingSkill(skillsDir, oldName, newName) {
@@ -132,12 +155,9 @@ export function renameExistingSkill(skillsDir, oldName, newName) {
   // Update name in SKILL.md frontmatter
   const skillMd = join(newPath, "SKILL.md");
   if (existsSync(skillMd)) {
-    let content = readFileSync(skillMd, "utf-8");
-    content = content.replace(
-      /^(---\n[\s\S]*?name:\s*)['"]?[^'"\n]+/m,
-      `$1${newName}`
-    );
-    fsExtra.writeFileSync(skillMd, content);
+    const content = readFileSync(skillMd, "utf-8");
+    const updated = rewriteFrontmatterName(content, newName);
+    if (updated !== content) fsExtra.writeFileSync(skillMd, updated);
   }
 
   return true;
@@ -152,17 +172,9 @@ export function renameExistingAgent(agentsDir, oldName, newName) {
 
   moveSync(oldPath, newPath);
 
-  // Update name in frontmatter
-  if (!existsSync(newPath)) return true;
-  let content = readFileSync(newPath, "utf-8");
-  const fmMatch = content.match(/^(---\n[\s\S]*?name:\s*)['"]?[^'"\n]+/m);
-  if (fmMatch) {
-    content = content.replace(
-      /^(---\n[\s\S]*?name:\s*)['"]?[^'"\n]+/m,
-      `$1${newName}`
-    );
-    fsExtra.writeFileSync(newPath, content);
-  }
+  const content = readFileSync(newPath, "utf-8");
+  const updated = rewriteFrontmatterName(content, newName);
+  if (updated !== content) fsExtra.writeFileSync(newPath, updated);
 
   return true;
 }

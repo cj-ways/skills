@@ -1,46 +1,59 @@
 import { describe, it, expect } from "vitest";
-import { readdirSync, readFileSync, existsSync } from "fs";
+import { readFileSync } from "fs";
 import { join } from "path";
-import { getPackageSkillsDir, getAvailableSkills } from "../src/utils/paths.js";
+import { getPackageSkillsDir, getPackageAgentsDir, getAvailableSkills, getAvailableAgents } from "../src/utils/paths.js";
+import { parseFrontmatter } from "../src/utils/frontmatter.js";
 
 const skillsDir = getPackageSkillsDir();
+const agentsDir = getPackageAgentsDir();
 const skills = getAvailableSkills();
+const agents = getAvailableAgents();
+
+const expected = [
+  "agent-audit", "create-pr", "deep-review", "deploy-prep",
+  "feature-audit", "find-unused", "generate-tests", "idea-audit",
+  "import-skill", "persist-knowledge", "quick-review", "security-check",
+  "skill-scout", "v0-design",
+];
 
 describe("skill frontmatter compliance", () => {
   for (const skill of skills) {
     describe(skill, () => {
-      const content = readFileSync(join(skillsDir, skill, "SKILL.md"), "utf-8");
-      const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
-      const frontmatter = fmMatch ? fmMatch[1] : "";
-
       it("has valid frontmatter", () => {
+        const content = readFileSync(join(skillsDir, skill, "SKILL.md"), "utf-8");
+        const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
         expect(fmMatch).not.toBeNull();
       });
 
       it("has name field matching directory", () => {
-        const nameMatch = frontmatter.match(/^name:\s*(.+)$/m);
-        expect(nameMatch).not.toBeNull();
-        expect(nameMatch[1].trim()).toBe(skill);
+        const content = readFileSync(join(skillsDir, skill, "SKILL.md"), "utf-8");
+        const fm = parseFrontmatter(content);
+        expect(fm.name).toBe(skill);
       });
 
       it("has description under 1024 chars", () => {
-        const descMatch = frontmatter.match(/^description:\s*['"]?([\s\S]*?)['"]?\s*$/m);
-        expect(descMatch).not.toBeNull();
-        expect(descMatch[1].length).toBeLessThan(1024);
+        const content = readFileSync(join(skillsDir, skill, "SKILL.md"), "utf-8");
+        const fm = parseFrontmatter(content);
+        expect(fm.description).toBeDefined();
+        expect(fm.description.length).toBeLessThan(1024);
       });
 
       it("has allowed-tools declared", () => {
-        expect(frontmatter).toMatch(/^allowed-tools:/m);
+        const content = readFileSync(join(skillsDir, skill, "SKILL.md"), "utf-8");
+        const fm = parseFrontmatter(content);
+        expect(fm["allowed-tools"]).toBeDefined();
       });
 
       it("uses comma-separated format for allowed-tools (not JSON array)", () => {
-        const toolsMatch = frontmatter.match(/^allowed-tools:\s*(.+)$/m);
-        if (toolsMatch) {
-          expect(toolsMatch[1]).not.toMatch(/^\[/);
+        const content = readFileSync(join(skillsDir, skill, "SKILL.md"), "utf-8");
+        const fm = parseFrontmatter(content);
+        if (fm["allowed-tools"]) {
+          expect(fm["allowed-tools"]).not.toMatch(/^\[/);
         }
       });
 
       it("is under 500 lines", () => {
+        const content = readFileSync(join(skillsDir, skill, "SKILL.md"), "utf-8");
         const lines = content.split("\n").length;
         expect(lines).toBeLessThan(500);
       });
@@ -51,6 +64,95 @@ describe("skill frontmatter compliance", () => {
 
       it("has name under 64 chars", () => {
         expect(skill.length).toBeLessThan(64);
+      });
+    });
+  }
+});
+
+describe("skill inventory", () => {
+  it("includes all expected skills", () => {
+    for (const s of expected) {
+      expect(skills).toContain(s);
+    }
+  });
+
+  it("skill count matches expected list", () => {
+    expect(skills).toHaveLength(expected.length);
+  });
+});
+
+describe("skill structural quality", () => {
+  // Known tools that skills can reference in their body
+  const KNOWN_TOOLS = ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "Agent", "WebSearch", "WebFetch", "AskUserQuestion"];
+
+  for (const skill of skills) {
+    describe(`${skill} structure`, () => {
+      it("has a Gotchas or Rules section", () => {
+        const content = readFileSync(join(skillsDir, skill, "SKILL.md"), "utf-8");
+        const hasGotchas = content.includes("## Gotchas");
+        const hasRules = content.includes("## Rules");
+        expect(hasGotchas || hasRules).toBe(true);
+      });
+
+      it("allowed-tools covers tools referenced in body", () => {
+        const content = readFileSync(join(skillsDir, skill, "SKILL.md"), "utf-8");
+        const fm = parseFrontmatter(content);
+        const declaredTools = (fm["allowed-tools"] || "").split(",").map(t => t.trim());
+
+        // Extract body after frontmatter
+        const bodyMatch = content.match(/^---\n[\s\S]*?\n---\n([\s\S]*)$/);
+        if (!bodyMatch) return;
+        const body = bodyMatch[1];
+
+        for (const tool of KNOWN_TOOLS) {
+          // Check if the body explicitly instructs using this tool as a Claude Code tool
+          // Require case-sensitive match (tool names are capitalized: Agent, Edit, Read, etc.)
+          // and proximity to tool-like context to avoid matching natural language ("the agent", "edit the description")
+          const patterns = [
+            new RegExp(`\\b${tool}\\b tool`, ""),       // "Agent tool", "Edit tool"
+            new RegExp(`Use the ${tool}\\b`, ""),        // "Use the Agent..."
+            new RegExp(`allowed-tools.*\\b${tool}\\b`),  // in allowed-tools references
+            new RegExp(`\\b${tool}\\(`, ""),             // "Agent(" function-call style
+          ];
+          const bodyMentionsTool = patterns.some(p => p.test(body));
+          if (bodyMentionsTool) {
+            expect(
+              declaredTools.includes(tool),
+              `${skill}: body references ${tool} but allowed-tools is [${declaredTools.join(", ")}]`
+            ).toBe(true);
+          }
+        }
+      });
+    });
+  }
+});
+
+describe("agent frontmatter compliance", () => {
+  for (const agent of agents) {
+    describe(agent, () => {
+      it("has valid frontmatter", () => {
+        const content = readFileSync(join(agentsDir, `${agent}.md`), "utf-8");
+        const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
+        expect(fmMatch).not.toBeNull();
+      });
+
+      it("has name field", () => {
+        const content = readFileSync(join(agentsDir, `${agent}.md`), "utf-8");
+        const fm = parseFrontmatter(content);
+        expect(fm.name).toBe(agent);
+      });
+
+      it("has description field", () => {
+        const content = readFileSync(join(agentsDir, `${agent}.md`), "utf-8");
+        const fm = parseFrontmatter(content);
+        expect(fm.description).toBeDefined();
+        expect(fm.description.length).toBeGreaterThan(0);
+      });
+
+      it("has model field", () => {
+        const content = readFileSync(join(agentsDir, `${agent}.md`), "utf-8");
+        const fm = parseFrontmatter(content);
+        expect(fm.model).toBeDefined();
       });
     });
   }

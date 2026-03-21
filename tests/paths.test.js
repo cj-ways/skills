@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { existsSync } from "fs";
 import { join } from "path";
+import { homedir } from "os";
 import {
   getPackageSkillsDir,
   getPackageAgentsDir,
@@ -8,6 +9,7 @@ import {
   getTargetDirs,
   getAvailableSkills,
   getAvailableAgents,
+  getAllInstallLocations,
 } from "../src/utils/paths.js";
 
 describe("getPackageSkillsDir", () => {
@@ -29,7 +31,7 @@ describe("getPackageRulesDir", () => {
 });
 
 describe("getTargetDirs", () => {
-  it("returns correct paths for claude agent", () => {
+  it("returns correct paths for claude agent (project scope)", () => {
     const dirs = getTargetDirs("claude", "project");
     expect(dirs.skills).toContain(".claude/skills");
     expect(dirs.agents).toContain(".claude/agents");
@@ -59,6 +61,12 @@ describe("getTargetDirs", () => {
     }
   });
 
+  it("uses homedir for user scope", () => {
+    const dirs = getTargetDirs("claude", "user");
+    expect(dirs.skills).toContain(homedir());
+    expect(dirs.skills).toContain(".claude/skills");
+  });
+
   it("throws for unknown agent", () => {
     expect(() => getTargetDirs("unknown", "project")).toThrow("Unknown agent");
   });
@@ -68,29 +76,59 @@ describe("getTargetDirs", () => {
   });
 });
 
+describe("getAllInstallLocations", () => {
+  it("returns skills and agents arrays", () => {
+    const locs = getAllInstallLocations();
+    expect(locs).toHaveProperty("skills");
+    expect(locs).toHaveProperty("agents");
+    expect(Array.isArray(locs.skills)).toBe(true);
+    expect(Array.isArray(locs.agents)).toBe(true);
+  });
+
+  it("returns 4 skill locations", () => {
+    const locs = getAllInstallLocations();
+    expect(locs.skills).toHaveLength(4);
+  });
+
+  it("returns 2 agent locations", () => {
+    const locs = getAllInstallLocations();
+    expect(locs.agents).toHaveLength(2);
+  });
+
+  it("each location has label, dir, and level", () => {
+    const locs = getAllInstallLocations();
+    for (const loc of [...locs.skills, ...locs.agents]) {
+      expect(loc).toHaveProperty("label");
+      expect(loc).toHaveProperty("dir");
+      expect(loc).toHaveProperty("level");
+      expect(["project", "user"]).toContain(loc.level);
+    }
+  });
+});
+
 describe("getAvailableSkills", () => {
-  it("returns 14 skills", () => {
+  const expected = [
+    "agent-audit", "create-pr", "deep-review", "deploy-prep",
+    "feature-audit", "find-unused", "generate-tests", "idea-audit",
+    "import-skill", "persist-knowledge", "quick-review", "security-check",
+    "skill-scout", "v0-design",
+  ];
+
+  it("includes all expected skills", () => {
     const skills = getAvailableSkills();
-    expect(skills).toHaveLength(14);
+    for (const s of expected) {
+      expect(skills).toContain(s);
+    }
+  });
+
+  it("skill count matches expected list", () => {
+    expect(getAvailableSkills()).toHaveLength(expected.length);
   });
 
   it("includes idea-audit (renamed from new-project-idea)", () => {
     const skills = getAvailableSkills();
     expect(skills).toContain("idea-audit");
     expect(skills).not.toContain("new-project-idea");
-  });
-
-  it("includes all expected skills", () => {
-    const skills = getAvailableSkills();
-    const expected = [
-      "agent-audit", "create-pr", "deep-review", "deploy-prep",
-      "feature-audit", "find-unused", "generate-tests", "idea-audit",
-      "import-skill", "persist-knowledge", "quick-review", "security-check",
-      "skill-scout", "v0-design",
-    ];
-    for (const s of expected) {
-      expect(skills).toContain(s);
-    }
   });
 });
 

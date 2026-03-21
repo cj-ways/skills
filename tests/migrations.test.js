@@ -2,11 +2,9 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { join } from "path";
 import fsExtra from "fs-extra";
 import { readFileSync } from "fs";
+import { loadMigrations, applyMigrations } from "../src/utils/migrations.js";
 
 const TMP = join(import.meta.dirname, ".tmp-test-migrations");
-
-// We can't easily import the private functions from update.js,
-// so we test migrations.json format validity and the migration logic inline.
 
 beforeEach(() => {
   fsExtra.ensureDirSync(TMP);
@@ -73,49 +71,46 @@ describe("migrations.json", () => {
 
     for (const m of data.migrations) {
       if (m.type === "rename") {
-        // The 'to' skill should exist
         expect(fsExtra.existsSync(join(skillsDir, m.to, "SKILL.md"))).toBe(true);
-        // The 'from' skill should NOT exist
         expect(fsExtra.existsSync(join(skillsDir, m.from))).toBe(false);
       }
     }
   });
 });
 
-describe("migration apply logic", () => {
-  // Simulate the migration logic from update.js
+describe("loadMigrations", () => {
+  it("loads valid migrations.json", () => {
+    const migrationsPath = join(import.meta.dirname, "..", "migrations.json");
+    const migrations = loadMigrations(migrationsPath);
+    expect(Array.isArray(migrations)).toBe(true);
+    expect(migrations.length).toBeGreaterThan(0);
+  });
 
-  function applyMigrations(locations, migrations) {
-    let applied = 0;
-    for (const migration of migrations) {
-      if (migration.type === "rename") {
-        for (const loc of locations) {
-          if (!fsExtra.existsSync(loc.skills)) continue;
-          const oldDir = join(loc.skills, migration.from);
-          const newDir = join(loc.skills, migration.to);
-          if (fsExtra.existsSync(join(oldDir, "SKILL.md")) && !fsExtra.existsSync(newDir)) {
-            fsExtra.removeSync(oldDir);
-            applied++;
-          }
-        }
-      } else if (migration.type === "remove") {
-        for (const loc of locations) {
-          if (!fsExtra.existsSync(loc.skills)) continue;
-          const oldDir = join(loc.skills, migration.from);
-          if (fsExtra.existsSync(oldDir)) {
-            fsExtra.removeSync(oldDir);
-            applied++;
-          }
-        }
-      }
-    }
-    return applied;
-  }
+  it("returns empty array for missing file", () => {
+    const migrations = loadMigrations(join(TMP, "nonexistent.json"));
+    expect(migrations).toEqual([]);
+  });
 
-  it("removes old skill directory on rename migration", () => {
+  it("returns empty array for malformed JSON", () => {
+    const bad = join(TMP, "bad.json");
+    fsExtra.writeFileSync(bad, "not json at all");
+    const migrations = loadMigrations(bad);
+    expect(migrations).toEqual([]);
+  });
+
+  it("returns empty array when migrations key is missing", () => {
+    const noMigrations = join(TMP, "no-migrations.json");
+    fsExtra.writeFileSync(noMigrations, JSON.stringify({ version: 1 }));
+    const migrations = loadMigrations(noMigrations);
+    expect(migrations).toEqual([]);
+  });
+});
+
+describe("applyMigrations (real production function)", () => {
+  it("renames skill directory via moveSync (not just delete)", () => {
     const skillsDir = join(TMP, "skills");
     fsExtra.ensureDirSync(join(skillsDir, "old-name"));
-    fsExtra.writeFileSync(join(skillsDir, "old-name", "SKILL.md"), "---\nname: old-name\n---\n");
+    fsExtra.writeFileSync(join(skillsDir, "old-name", "SKILL.md"), "---\nname: old-name\n---\n# Content");
 
     const applied = applyMigrations(
       [{ skills: skillsDir }],
@@ -123,7 +118,12 @@ describe("migration apply logic", () => {
     );
 
     expect(applied).toBe(1);
+    // Old directory should be gone
     expect(fsExtra.existsSync(join(skillsDir, "old-name"))).toBe(false);
+    // New directory should exist with the original content
+    expect(fsExtra.existsSync(join(skillsDir, "new-name", "SKILL.md"))).toBe(true);
+    const content = fsExtra.readFileSync(join(skillsDir, "new-name", "SKILL.md"), "utf-8");
+    expect(content).toContain("# Content");
   });
 
   it("skips rename if old skill doesn't exist", () => {
@@ -150,7 +150,6 @@ describe("migration apply logic", () => {
     );
 
     expect(applied).toBe(0);
-    // Old dir should still exist since we didn't migrate
     expect(fsExtra.existsSync(join(skillsDir, "old-name"))).toBe(true);
   });
 
@@ -168,13 +167,13 @@ describe("migration apply logic", () => {
     expect(fsExtra.existsSync(join(skillsDir, "deprecated-skill"))).toBe(false);
   });
 
-  it("applies across multiple locations", () => {
+  it("applies across multiple locations and preserves content", () => {
     const loc1 = join(TMP, "loc1", "skills");
     const loc2 = join(TMP, "loc2", "skills");
     fsExtra.ensureDirSync(join(loc1, "old-name"));
-    fsExtra.writeFileSync(join(loc1, "old-name", "SKILL.md"), "test");
+    fsExtra.writeFileSync(join(loc1, "old-name", "SKILL.md"), "---\nname: old-name\n---\nloc1 content");
     fsExtra.ensureDirSync(join(loc2, "old-name"));
-    fsExtra.writeFileSync(join(loc2, "old-name", "SKILL.md"), "test");
+    fsExtra.writeFileSync(join(loc2, "old-name", "SKILL.md"), "---\nname: old-name\n---\nloc2 content");
 
     const applied = applyMigrations(
       [{ skills: loc1 }, { skills: loc2 }],
@@ -182,5 +181,57 @@ describe("migration apply logic", () => {
     );
 
     expect(applied).toBe(2);
+    expect(fsExtra.existsSync(join(loc1, "new-name", "SKILL.md"))).toBe(true);
+    expect(fsExtra.existsSync(join(loc2, "new-name", "SKILL.md"))).toBe(true);
+    expect(fsExtra.readFileSync(join(loc1, "new-name", "SKILL.md"), "utf-8")).toContain("loc1 content");
+    expect(fsExtra.readFileSync(join(loc2, "new-name", "SKILL.md"), "utf-8")).toContain("loc2 content");
+  });
+
+  it("rejects path-traversal slugs in migration.from", () => {
+    const skillsDir = join(TMP, "skills");
+    fsExtra.ensureDirSync(skillsDir);
+
+    const applied = applyMigrations(
+      [{ skills: skillsDir }],
+      [{ type: "rename", from: "../escape", to: "new-name", since: "2.0.0" }]
+    );
+
+    expect(applied).toBe(0);
+  });
+
+  it("rejects path-traversal slugs in migration.to", () => {
+    const skillsDir = join(TMP, "skills");
+    fsExtra.ensureDirSync(join(skillsDir, "old-name"));
+    fsExtra.writeFileSync(join(skillsDir, "old-name", "SKILL.md"), "test");
+
+    const applied = applyMigrations(
+      [{ skills: skillsDir }],
+      [{ type: "rename", from: "old-name", to: "../escape", since: "2.0.0" }]
+    );
+
+    expect(applied).toBe(0);
+    // Original should still exist
+    expect(fsExtra.existsSync(join(skillsDir, "old-name", "SKILL.md"))).toBe(true);
+  });
+
+  it("skips migration with invalid slug containing dots", () => {
+    const skillsDir = join(TMP, "skills");
+    fsExtra.ensureDirSync(skillsDir);
+
+    const applied = applyMigrations(
+      [{ skills: skillsDir }],
+      [{ type: "remove", from: "../../etc", since: "2.0.0" }]
+    );
+
+    expect(applied).toBe(0);
+  });
+
+  it("skips when skills directory does not exist", () => {
+    const applied = applyMigrations(
+      [{ skills: join(TMP, "nonexistent") }],
+      [{ type: "rename", from: "old", to: "new", since: "2.0.0" }]
+    );
+
+    expect(applied).toBe(0);
   });
 });

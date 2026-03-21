@@ -1,13 +1,14 @@
 {
   "name": "@cj-ways/arcana",
-  "version": "1.7.1",
+  "version": "1.8.0",
   "description": "Curated agent skills for Claude Code and Codex CLI — 14 battle-tested skills backed by SkillsBench data.",
   "bin": {
     "arcana": "bin/arcana.js"
   },
   "type": "module",
   "scripts": {
-    "test": "node bin/arcana.js --version && node bin/arcana.js list && node bin/arcana.js doctor",
+    "test": "vitest run && node bin/arcana.js --version && node bin/arcana.js list && node bin/arcana.js doctor",
+    "test:smoke": "node bin/arcana.js --version && node bin/arcana.js list && node bin/arcana.js doctor",
     "test:unit": "vitest run",
     "test:watch": "vitest"
   },
@@ -52,6 +53,7 @@
     "LICENSE"
   ],
   "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.0",
     "vitest": "^4.1.0"
   }
 }
