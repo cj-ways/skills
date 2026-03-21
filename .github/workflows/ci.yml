@@ -31,6 +31,6 @@ jobs:
         run: |
           node bin/arcana.js --version
           node bin/arcana.js list
-          node bin/arcana.js use find-unused > /dev/null
-          node bin/arcana.js info find-unused
+          node bin/arcana.js use deep-fix > /dev/null
+          node bin/arcana.js info deep-fix
           node bin/arcana.js doctor
